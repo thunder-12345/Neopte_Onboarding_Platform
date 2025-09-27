@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="jumbotron">
+  {% if current_user.is_authenticated %}
+    <p>Hi {{ current_user.name }}. You are an admin!</p>
+  {% else %}
+    <p>Please login or register!</p>
+  {% endif %}
+</div>
+
+<h1>User List</h1>
+  {% if user %}
+    <ol>
+      {% for user in user %}
+      <li>
+        {{ user.name }}
+        <span class="id">(ID: {{ user.id }})</span>
+        <span class="role">(Role: {{ user.role }})</span>
+        {% if user.role != "admin" %}
+          <form action="{{ url_for('upgrade_user') }}" method="post">
+            <input type="hidden" name="user_id" value="{{ user.id }}">
+            <button type="submit" class="btn btn-success">Upgrade to Admin</button>
+          </form>
+        {% endif %}
+        <br>
+      </li>
+      {% endfor %}
+  {% else %}
+      <li class="empty">No users added yet.</li>
+  {% endif %}
+    </ul>
+
+{% endblock %}
