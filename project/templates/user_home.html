@@ -4,10 +4,7 @@
   {% if current_user.is_authenticated %}
     <p>Hi {{ current_user.name }}! You are a user!</p>
 
-    <form action = "/success" method = "post" enctype="multipart/form-data">  
-        <input type="file" name="file" />  
-        <input type = "submit" value="Upload">  
-    </form>  
+    <p>Please contact a board member to be assigned a role!</p>
   {% else %}
     <p>Please login or register!</p>
   {% endif %}

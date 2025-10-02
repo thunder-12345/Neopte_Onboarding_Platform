@@ -15,7 +15,7 @@ class User(db.Model, UserMixin):
     name: Mapped[str] = mapped_column()
     email: Mapped[str] = mapped_column(unique=True)
     password_hash: Mapped[str] = mapped_column(db.String(128))
-    role: Mapped[str] = mapped_column(default="user")  # "admin" or "user"
+    role: Mapped[str] = mapped_column(default="user")  # "user", "volunteer", " intern", "board"
 
     hours: Mapped[List["Hours"]] = relationship("Hours", back_populates="user", cascade="all, delete-orphan")
     documents: Mapped[List["Document"]] = relationship("Document", back_populates="user", cascade="all, delete-orphan")

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="jumbotron">
+  {% if current_user.is_authenticated %}
+    <p>Hi {{ current_user.name }}! You are an intern!</p>
+
+    <form action = "/success" method = "post" enctype="multipart/form-data">  
+        <input type="file" name="file" />  
+        <input type = "submit" value="Upload">  
+    </form>  
+  {% else %}
+    <p>Please login or register!</p>
+  {% endif %}
+</div>
+
+
+
+{% endblock %}

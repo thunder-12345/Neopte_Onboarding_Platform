@@ -16,12 +16,15 @@
         {{ user.name }}
         <span class="id">(ID: {{ user.id }})</span>
         <span class="role">(Role: {{ user.role }})</span>
-        {% if user.role != "admin" %}
-          <form action="{{ url_for('upgrade_user') }}" method="post">
-            <input type="hidden" name="user_id" value="{{ user.id }}">
-            <button type="submit" class="btn btn-success">Upgrade to Admin</button>
-          </form>
-        {% endif %}
+        {% for role_choice in ['user', 'board', 'volunteer', 'intern'] %} 
+          {% if (user.role != role_choice) and user.role != "board" %}
+            <form action="{{ url_for('upgrade_user') }}" method="post">
+              <input type="hidden" name="user_id" value="{{ user.id }}">
+              <input type="hidden" name="role_choice" value="{{ role_choice }}">
+              <button type="submit" class="btn btn-success">Upgrade to {{ role_choice|capitalize }}</button>
+            </form>
+          {% endif %}
+        {% endfor %}
         <br>
       </li>
       {% endfor %}
