@@ -16,8 +16,9 @@
         {{ user.name }}
         <span class="id">(ID: {{ user.id }})</span>
         <span class="role">(Role: {{ user.role }})</span>
-        {% for role_choice in ['user', 'volunteer', 'intern'] %} 
-          {% if (user.role != role_choice) and user.role != "board" %}
+        
+        {% for role_choice in ['user', 'volunteer', 'intern', 'board'] %} 
+          {% if (user.role != role_choice and user != current_user) %}
             <form action="{{ url_for('upgrade_user') }}" method="post">
               <input type="hidden" name="user_id" value="{{ user.id }}">
               <input type="hidden" name="role_choice" value="{{ role_choice }}">
@@ -31,6 +32,6 @@
   {% else %}
       <li class="empty">No users added yet.</li>
   {% endif %}
-    </ul>
+    </ol>
 
 {% endblock %}

@@ -2,11 +2,18 @@
 from project import db, app
 from project.decorators import permission_required
 from flask import render_template, redirect, request, url_for, flash 
-from flask_login import login_user, login_required, logout_user
+from flask_login import login_user, login_required, logout_user, current_user
 from project.models import User
 from project.forms import RegistrationForm, LoginForm 
 from distutils.log import debug
 from fileinput import filename
+
+redirect_target = {
+    "intern": "intern_dashboard",
+    "volunteer": "volunteer_dashboard",
+    "board": "board_dashboard",
+    "admin": "admin_dashboard"
+}
 
 # Create the first admin user if not already present
 with app.app_context():
@@ -23,6 +30,20 @@ with app.app_context():
         db.session.commit()
         print("Admin user created: admin@example.com / admin123")
 
+    realAdmin = User.query.filter_by(email="realadmin@gmail.com").first()
+    if not realAdmin:
+        realAdmin = User(
+            name="REAL ADMIN",
+            email="realadmin@gmail.com",
+            password="admin123",   # password hashed in User model
+            role="admin"
+        )
+        print(realAdmin.role)
+        db.session.add(realAdmin)
+        db.session.commit()
+        print("realAdmin user created: realadmin@gmail.com / admin123")
+
+
 # Route to upgrade a user's role (board only)
 @app.route("/upgrade/user", methods=["POST"])
 @login_required
@@ -33,18 +54,18 @@ def upgrade_user():
 
     if not user_id:
         flash("No user selected.")
-        return redirect(url_for("board_dashboard"))
+        return redirect(url_for(redirect_target.get(current_user.role, "user_dashboard")))
     
     user = User.query.get(user_id)  # Find user by ID
 
     if user is None:
         flash("User not found!")
-        return redirect(url_for("board_dashboard"))
+        return redirect(url_for(redirect_target.get(current_user.role, "user_dashboard")))
     
     user.role = role_choice  # Update user role
     db.session.commit()
-    flash(f"User {user.name} has been upgraded to {user.role} .")
-    return redirect(url_for("board_dashboard"))
+    flash(f"User {user.name} has been changed to {user.role} .")
+    return redirect(url_for(redirect_target.get(current_user.role, "board_dashboard")))
     
 # Home page for general users
 @app.route("/")
@@ -72,6 +93,14 @@ def volunteer_dashboard():
 def board_dashboard():
     user = User.query.all()  # Get all users
     return render_template("board_home.html", user = user)
+
+# Dashboard for admin (admin only)
+@app.route("/admin/dashboard")
+@login_required
+@permission_required('admin')
+def admin_dashboard():
+    user = User.query.all()  # Get all users
+    return render_template("admin_home.html", user = user)
 
 # File upload success handler
 @app.route('/success', methods = ['POST'])  
@@ -116,14 +145,8 @@ def login():
 
             # Redirect user based on their role
             print(user.role)
-            if user.role == "board":
-                return redirect(url_for("board_dashboard"))
-            elif user.role == "intern": 
-                return redirect(url_for("intern_dashboard"))
-            elif user.role == "volunteer": 
-                return redirect(url_for("volunteer_dashboard"))
-            else:   
-                return redirect(url_for("user_dashboard"))
+            return redirect(url_for(redirect_target.get(current_user.role, "user_dashboard")))
+        
         else:
             if user is None:
                 flash('Email does not exist.')
