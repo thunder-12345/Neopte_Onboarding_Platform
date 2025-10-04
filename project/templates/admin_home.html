@@ -16,18 +16,26 @@
         {{ user.name }}
         <span class="id">(ID: {{ user.id }})</span>
         <span class="role">(Role: {{ user.role }})</span>
-        
-        {% for role_choice in ['user', 'volunteer', 'intern', 'board'] %} 
-          {% if (user.role != role_choice and user != current_user) %}
-            <form action="{{ url_for('upgrade_user') }}" method="post">
-              <input type="hidden" name="user_id" value="{{ user.id }}">
-              <input type="hidden" name="role_choice" value="{{ role_choice }}">
-              <button type="submit" class="btn btn-success">Change role to {{ role_choice|capitalize }}</button>
+        {% if user.role != "admin" %}
+            {% for role_choice in ['user', 'volunteer', 'intern', 'board'] %} 
+            {% if (user.role != role_choice) %}
+                <form action="{{ url_for('upgrade_user') }}" method="post">
+                <input type="hidden" name="user_id" value="{{ user.id }}">
+                <input type="hidden" name="role_choice" value="{{ role_choice }}">
+                <button type="submit" class="btn btn-success">Change role to {{ role_choice|capitalize }}</button>
+                </form>
+
+            {% endif %}
+            {% endfor %}
+
+            <form action="{{ url_for('delete_user') }}" method="post">
+                <input type="hidden" name="user_id" value="{{ user.id }}">
+                <input type="hidden" name="user_name" value="{{ user.name }}">
+                <button type="submit" class="btn btn-danger">Delete {{ user.name }}</button>
             </form>
-          {% endif %}
-        {% endfor %}
-        <br>
-      </li>
+            <br>
+        </li>
+        {% endif %}
       {% endfor %}
   {% else %}
       <li class="empty">No users added yet.</li>

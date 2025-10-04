@@ -44,7 +44,7 @@ with app.app_context():
         print("realAdmin user created: realadmin@gmail.com / admin123")
 
 
-# Route to upgrade a user's role (board only)
+# Route to upgrade a user's role (board and admin only)
 @app.route("/upgrade/user", methods=["POST"])
 @login_required
 @permission_required('board')
@@ -65,6 +65,29 @@ def upgrade_user():
     user.role = role_choice  # Update user role
     db.session.commit()
     flash(f"User {user.name} has been changed to {user.role} .")
+    return redirect(url_for(redirect_target.get(current_user.role, "board_dashboard")))
+
+# Route to delete a user (board and admin only)
+@app.route("/delete/user", methods=["POST"])
+@login_required
+@permission_required('board')
+def delete_user():
+    user_id = request.form.get("user_id", type=int)  # Get user ID from form
+    user_name = request.form.get("user_name", type=str) 
+
+    if not user_id:
+        flash("No user selected.")
+        return redirect(url_for(redirect_target.get(current_user.role, "user_dashboard")))
+    
+    user = User.query.get(user_id)  # Find user by ID
+
+    if user is None:
+        flash("User not found!")
+        return redirect(url_for(redirect_target.get(current_user.role, "user_dashboard")))
+    
+    db.session.delete(user)  # Delete user from database
+    db.session.commit()
+    flash(f"User {user_name} has been deleted.")
     return redirect(url_for(redirect_target.get(current_user.role, "board_dashboard")))
     
 # Home page for general users
