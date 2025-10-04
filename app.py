@@ -7,6 +7,7 @@ from project.models import User
 from project.forms import RegistrationForm, LoginForm 
 from distutils.log import debug
 from fileinput import filename
+import random
 
 redirect_target = {
     "intern": "intern_dashboard",
@@ -14,6 +15,17 @@ redirect_target = {
     "board": "board_dashboard",
     "admin": "admin_dashboard"
 }
+
+roles = ["intern", "user", "volunteer", "board"]
+
+# Generate 20 users
+users_data = []
+for i in range(1, 21):
+    name = f"User{i}"
+    email = f"user{i}@example.com"
+    password = f"pass{i}123"
+    role = random.choice(roles)
+    users_data.append({"name": name, "email": email, "password": password, "role": role})
 
 # Create the first admin user if not already present
 with app.app_context():
@@ -42,6 +54,20 @@ with app.app_context():
         db.session.add(realAdmin)
         db.session.commit()
         print("realAdmin user created: realadmin@gmail.com / admin123")
+
+    for u in users_data:
+        # Avoid duplicates
+        if not User.query.filter_by(email=u["email"]).first():
+            user = User(
+                name=u["name"],
+                email=u["email"],
+                password=u["password"],
+                role=u["role"]
+            )
+            db.session.add(user)
+            print(f"Adding {u['name']} ({u['role']})")
+    db.session.commit()
+    print("20 users added successfully!")
 
 
 # Route to upgrade a user's role (board and admin only)
