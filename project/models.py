@@ -40,9 +40,10 @@ class Hours(db.Model):
     date: Mapped[str] = mapped_column()
     amount: Mapped[float] = mapped_column()
     description: Mapped[str] = mapped_column()
-    user_id: Mapped[int] = mapped_column(db.ForeignKey('users.id'), name="fk_hours_user_id")
-
     user: Mapped["User"] = relationship("User", back_populates="hours")
+
+
+    user_id: Mapped[int] = mapped_column(db.ForeignKey('users.id'), name="fk_hours_user_id")
 
     def __init__(self, date, amount, description, user):
         self.date = date
@@ -57,16 +58,16 @@ class Document(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     filename: Mapped[str] = mapped_column()
     doctype: Mapped[str] = mapped_column()
-    status: Mapped[str] = mapped_column()
-    user_id: Mapped[int] = mapped_column(db.ForeignKey('users.id'), name="fk_documents_user_id")
-
+    status: Mapped[str] = mapped_column(default=("Pending"))  # "pending", "approved", "rejected"
     user: Mapped["User"] = relationship("User", back_populates="documents")
 
-    def __init__(self, filename, doctype, status, user):
+    user_id: Mapped[int] = mapped_column(db.ForeignKey('users.id'), name="fk_documents_user_id")
+
+    def __init__(self, filename, doctype, user, status = "Pending"):
         self.filename = filename
         self.doctype = doctype
-        self.status = status
         self.user = user
+        self.status = status 
 
 
 

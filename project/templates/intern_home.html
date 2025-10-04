@@ -3,11 +3,13 @@
 <div class="jumbotron">
   {% if current_user.is_authenticated %}
     <p>Hi {{ current_user.name }}! You are an intern!</p>
-
-    <form action = "/file/upload" method = "post" enctype="multipart/form-data">  
-        <input type="file" name="file" />  
+    <div class="mb-3">
+      <form action = "/file/upload" method = "POST" enctype="multipart/form-data">  
+        <label for="formFileMultiple" class="form-label">Upload your documents below!</label>
+        <input class="form-control" type="file" name="file" id="formFileMultiple" multiple> 
         <input type = "submit" value="Upload">  
-    </form>  
+      </form> 
+    </div>
   {% else %}
     <p>Please login or register!</p>
   {% endif %}

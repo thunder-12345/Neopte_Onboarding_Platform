@@ -3,7 +3,7 @@ from project import db, app
 from project.decorators import permission_required
 from flask import render_template, redirect, request, url_for, flash 
 from flask_login import login_user, login_required, logout_user, current_user
-from project.models import User
+from project.models import User, Document, Hours
 from project.forms import RegistrationForm, LoginForm 
 from distutils.log import debug
 from fileinput import filename
@@ -157,6 +157,7 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['UPLOAD_EXTENSIONS']
 
 # File upload success handler (handles file uploads and shows acknowledgement)
+@login_required
 @app.route('/file/upload', methods = ['POST'])  
 def file_upload():  
     if request.method == 'POST':  
@@ -165,13 +166,28 @@ def file_upload():
     
         for f in uploaded_files:
             if f.filename:  # skip empty uploads
-                if allowed_file(f.filename):
-                    f.save(os.path.join(app.config['UPLOAD_PATH'], f.filename))
-                    saved_files.append(f.filename)
-                else:
-                    return render_template("acknowledgement.html", names=saved_files, msg="File extension not allowed", allGood = False)
+                if not allowed_file(f.filename):
+                    return render_template( "acknowledgement.html", 
+                                           names=saved_files, 
+                                           msg="File extension not allowed", 
+                                           allGood = False )
+                    
+        for f in uploaded_files:
+            if f.filename:  # skip empty uploads
+                f.save(os.path.join(app.config['UPLOAD_PATH'], f.filename))
+                saved_files.append(f.filename)
+                document = Document(
+                    filename=f.filename,
+                    doctype=f.content_type,
+                    user=current_user
+                )
+                db.session.add(document)
+                db.session.commit()
                                     
-        return render_template("acknowledgement.html", names=saved_files, msg="File(s) uploaded successfully", allGood = True)
+        return render_template("acknowledgement.html", 
+                               names=saved_files, 
+                               msg="File(s) uploaded successfully", 
+                               allGood = True)
     
 # Registration route (handles user registration)
 @app.route("/register", methods=["GET", "POST"])
