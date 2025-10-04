@@ -8,7 +8,9 @@ from project.forms import RegistrationForm, LoginForm
 from distutils.log import debug
 from fileinput import filename
 import random
+import os
 
+# Mapping user roles to their dashboard route names
 redirect_target = {
     "intern": "intern_dashboard",
     "volunteer": "volunteer_dashboard",
@@ -16,9 +18,10 @@ redirect_target = {
     "admin": "admin_dashboard"
 }
 
+# List of possible user roles
 roles = ["intern", "user", "volunteer", "board"]
 
-# Generate 20 users
+# Generate 20 random users with different roles for initial data
 users_data = []
 for i in range(1, 21):
     name = f"User{i}"
@@ -27,7 +30,7 @@ for i in range(1, 21):
     role = random.choice(roles)
     users_data.append({"name": name, "email": email, "password": password, "role": role})
 
-# Create the first admin user if not already present
+# Create admin and real admin users if they don't exist, and add generated users to the database
 with app.app_context():
     admin = User.query.filter_by(email="admin@example.com").first()
     if not admin:
@@ -69,8 +72,7 @@ with app.app_context():
     db.session.commit()
     print("20 users added successfully!")
 
-
-# Route to upgrade a user's role (board and admin only)
+# Route to upgrade a user's role (accessible by board and admin roles)
 @app.route("/upgrade/user", methods=["POST"])
 @login_required
 @permission_required('board')
@@ -93,7 +95,7 @@ def upgrade_user():
     flash(f"User {user.name} has been changed to {user.role} .")
     return redirect(url_for(redirect_target.get(current_user.role, "board_dashboard")))
 
-# Route to delete a user (board and admin only)
+# Route to delete a user (accessible by board and admin roles)
 @app.route("/delete/user", methods=["POST"])
 @login_required
 @permission_required('board')
@@ -116,26 +118,26 @@ def delete_user():
     flash(f"User {user_name} has been deleted.")
     return redirect(url_for(redirect_target.get(current_user.role, "board_dashboard")))
     
-# Home page for general users
+# Home page for general users (no login required)
 @app.route("/")
 def user_dashboard():
     return render_template("user_home.html")
 
-# Dashboard for interns (intern only)
+# Dashboard for interns (intern role only)
 @app.route("/intern/dashboard")
 @login_required
 @permission_required('intern')
 def intern_dashboard():
     return render_template("intern_home.html")
 
-# Dashboard for volunteers (volunteer only)
+# Dashboard for volunteers (volunteer role only)
 @app.route("/volunteer/dashboard")
 @login_required
 @permission_required('volunteer')
 def volunteer_dashboard():
     return render_template("volunteer_home.html")
 
-# Dashboard for board members (board only)
+# Dashboard for board members (board role only)
 @app.route("/board/dashboard")
 @login_required
 @permission_required('board')
@@ -143,7 +145,7 @@ def board_dashboard():
     user = User.query.all()  # Get all users
     return render_template("board_home.html", user = user)
 
-# Dashboard for admin (admin only)
+# Dashboard for admin (admin role only)
 @app.route("/admin/dashboard")
 @login_required
 @permission_required('admin')
@@ -151,15 +153,27 @@ def admin_dashboard():
     user = User.query.all()  # Get all users
     return render_template("admin_home.html", user = user)
 
-# File upload success handler
-@app.route('/success', methods = ['POST'])  
-def success():  
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['UPLOAD_EXTENSIONS']
+
+# File upload success handler (handles file uploads and shows acknowledgement)
+@app.route('/file/upload', methods = ['POST'])  
+def file_upload():  
     if request.method == 'POST':  
-        f = request.files['file']  # Get uploaded file
-        f.save(f.filename)         # Save file to disk
-        return render_template("acknowledgement.html", name = f.filename)  
+        uploaded_files = request.files.getlist('file')  # note: 'file' is the input name
+        saved_files = []
     
-# Registration route
+        for f in uploaded_files:
+            if f.filename:  # skip empty uploads
+                if allowed_file(f.filename):
+                    f.save(os.path.join(app.config['UPLOAD_PATH'], f.filename))
+                    saved_files.append(f.filename)
+                else:
+                    return render_template("acknowledgement.html", names=saved_files, msg="File extension not allowed", allGood = False)
+                                    
+        return render_template("acknowledgement.html", names=saved_files, msg="File(s) uploaded successfully", allGood = True)
+    
+# Registration route (handles user registration)
 @app.route("/register", methods=["GET", "POST"])
 def register():
     form = RegistrationForm()  # Create registration form
@@ -181,7 +195,7 @@ def register():
 
     return render_template('register.html', form=form) 
 
-# Login route
+# Login route (handles user login)
 @app.route("/login", methods=['GET', 'POST'])
 def login():
     form = LoginForm()  # Create login form
@@ -204,7 +218,7 @@ def login():
 
     return render_template('login.html', form=form)
 
-# Logout route
+# Logout route (logs out the current user)
 @app.route("/logout")
 @login_required
 def logout():

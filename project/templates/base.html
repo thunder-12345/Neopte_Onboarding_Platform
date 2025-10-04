@@ -10,8 +10,14 @@
     <nav class="navbar bg-dark border-bottom border-body" data-bs-theme="dark">  <div class="container-fluid">
     <a class="navbar-brand" 
           href="{% if current_user.is_authenticated and current_user.role == 'admin' %}
+            {{ url_for('admin_dashboard') }}
+          {% elif current_user.is_authenticated and current_user.role == 'board' %}  
             {{ url_for('board_dashboard') }}
-         {% else %}
+          {% elif current_user.is_authenticated and current_user.role == 'volunteer' %}  
+              {{ url_for('volunteer_dashboard') }}
+          {% elif current_user.is_authenticated and current_user.role == 'intern' %}  
+              {{ url_for('intern_dashboard') }}
+          {% else %}
             {{ url_for('user_dashboard') }}
          {% endif %}">
          Home

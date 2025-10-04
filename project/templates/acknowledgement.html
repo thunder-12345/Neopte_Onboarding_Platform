@@ -1,7 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
 
-    <p>File uploaded successfully</p>
-    <p>File Name: {{name}}</p>
-
+    <p>{{ msg }}</p>
+    {% if allGood %}
+        {% for name in names %}
+            <p>File Name: {{name}}</p>
+        {% endfor %}
+    {% endif %}
 {% endblock %}
