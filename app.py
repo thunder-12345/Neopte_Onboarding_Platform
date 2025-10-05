@@ -153,6 +153,20 @@ def admin_dashboard():
     user = User.query.all()  # Get all users
     return render_template("admin_home.html", user = user)
 
+# if volunteer or intern, view the documents they've uploaded and their status
+# if board or admin, view all documents and status and ability to change their status
+@app.route("/documents/status")
+@login_required
+@permission_required('volunteer')
+def document_status():
+    if current_user.role in ['volunteer', 'intern']:
+        documents = Document.query.filter_by(user_id=current_user.id).all()
+        return render_template("document_status_list.html", documents=documents, role=current_user.role)
+    else:  # board or admin
+        documents = Document.query.all()
+        users = User.query.all()
+        return render_template("document_status_list.html", documents=documents, users=users, role=current_user.role)
+        
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['UPLOAD_EXTENSIONS']
 

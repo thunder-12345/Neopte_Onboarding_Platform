@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Document List</h1>
+    <ol>
+        {% if role != "admin" and role != "board" %} 
+        <ol>
+            {% for doc in current_user.documents %}
+            <li>
+                <p>File Name: {{ doc.filename }}</p>
+                <p>Status: {{ doc.status }}</p>
+                <div class="progress" > 
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100" style="width: 75%" ></div>
+                </div>
+                <br>
+            </li>        
+            {% endfor %}
+        </ol>    
+        {% else %}
+        
+            {% for user in users %}
+            <li>
+                {{ user.name }}
+                <span class="id">(ID: {{ user.id }})</span>
+                <span class="role">(Role: {{ user.role }})</span>
+                <ol>
+                {% for doc in user.documents %}
+                <li>
+                    <p>File Name: {{ doc.filename }}</p>
+                    <p>Status: {{ doc.status }}</p>
+                    <div class="progress" > 
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100" style="width: 75%" ></div>
+                    </div>
+                    <br>    
+                </li>    
+                {% endfor %}
+                </ol>
+            </li> 
+            {% endfor %}
+
+        {% endif %}
+    </ol>
+{% endblock %}
