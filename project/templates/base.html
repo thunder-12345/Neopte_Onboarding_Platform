@@ -7,9 +7,11 @@
     <title></title>
   </head>
   <body>
-    <nav class="navbar bg-dark border-bottom border-body" data-bs-theme="dark">  
-      <div class="container-fluid">
-      <a class="navbar-brand" 
+    <nav class="navbar navbar-expand bg-dark border-bottom border-body" data-bs-theme="dark">
+      <div class="container-fluid d-flex">
+
+        <!-- Home link -->
+        <a class="navbar-brand" 
             href="{% if current_user.is_authenticated and current_user.role == 'admin' %}
               {{ url_for('admin_dashboard') }}
             {% elif current_user.is_authenticated and current_user.role == 'board' %}  
@@ -22,44 +24,39 @@
               {{ url_for('user_dashboard') }}
           {% endif %}">
           Home
-      </a>
+        </a>
 
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarText">
-      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-        
+        <!-- Links immediately next to Home -->
+        <ul class="navbar-nav mb-2 mb-lg-0 d-flex flex-row">
+          {% if current_user.is_authenticated %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('document_status') }}">Document Status</a>
+          </li>
+          {% else %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('register') }}">Register</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('login') }}">Log in</a>
+          </li>
+          {% endif %}
+        </ul>
+
+        <!-- Logout floated to far right -->
         {% if current_user.is_authenticated %}
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('document_status') }}">Document Status</a>
-        </li>
-
-        <li class="nav-item">
-          <a class="nav-link" href="{{url_for('logout')}}">Logout</a>
-        </li>
-        {% else %}
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('register') }}">Register</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('login') }}">Log in</a>
-        </li>
+        <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+          <li class="nav-item">
+            <a class="nav-link" href="{{url_for('logout')}}">Logout</a>
+          </li>
+        </ul>
         {% endif %}
 
-      </ul>
-
-    </div>
-    </div>
+      </div>
     </nav>
-    
-    
 
     {% block content %}
-
     {% endblock %}
 
-    
     {% with messages = get_flashed_messages() %}
     {% if messages %}
     <ul class="flashes">
@@ -69,7 +66,6 @@
     </ul>
     {% endif %}
     {% endwith %}
-    
+
   </body>
 </html>
-
