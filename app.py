@@ -166,6 +166,18 @@ def document_status():
         documents = Document.query.all()
         users = User.query.all()
         return render_template("document_status_list.html", documents=documents, users=users, role=current_user.role)
+    
+@app.route("/documents/update_status/", methods=["POST"])
+@login_required
+@permission_required('board')    
+def update_document_status():
+    doc_id = request.form.get("doc_id", type=int)  
+    new_status = request.form.get("new_status", type=str)  
+    document = Document.query.get(doc_id)
+    if document:
+        document.status = new_status
+        db.session.commit()
+    return redirect(url_for('document_status'))
         
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['UPLOAD_EXTENSIONS']

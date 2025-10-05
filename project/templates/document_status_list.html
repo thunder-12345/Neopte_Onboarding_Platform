@@ -9,9 +9,6 @@
             <li>
                 <p>File Name: {{ doc.filename }}</p>
                 <p>Status: {{ doc.status }}</p>
-                <div class="progress" > 
-                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100" style="width: 75%" ></div>
-                </div>
                 <br>
             </li>        
             {% endfor %}
@@ -26,11 +23,30 @@
                 <ol>
                 {% for doc in user.documents %}
                 <li>
-                    <p>File Name: {{ doc.filename }}</p>
-                    <p>Status: {{ doc.status }}</p>
-                    <div class="progress" > 
-                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100" style="width: 75%" ></div>
+                    <span>File Name: {{ doc.filename }}. <span>
+                    <div class="btn-group" role="group">
+                        <button id="btnGroupDrop1" type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                        Status: {{ doc.status }}
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="btnGroupDrop1">
+                        <form action="{{ url_for('update_document_status') }}" method="post" style="display:inline;">
+                            <input type="hidden" name="doc_id" value="{{ doc.id }}">
+                            <input type="hidden" name="new_status" value="Pending">
+                            <button type="submit" class="dropdown-item">Pending</button>
+                        </form>
+                        <form action="{{ url_for('update_document_status') }}" method="post" style="display:inline;">
+                            <input type="hidden" name="doc_id" value="{{ doc.id }}">
+                            <input type="hidden" name="new_status" value="Approved">
+                            <button type="submit" class="dropdown-item">Approved</button>
+                        </form>
+                        <form action="{{ url_for('update_document_status') }}" method="post" style="display:inline;">
+                            <input type="hidden" name="doc_id" value="{{ doc.id }}">
+                            <input type="hidden" name="new_status" value="Denied">
+                            <button type="submit" class="dropdown-item">Denied</button>
+                        </form>
+                        </ul>
                     </div>
+                    
                     <br>    
                 </li>    
                 {% endfor %}

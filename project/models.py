@@ -58,7 +58,7 @@ class Document(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     filename: Mapped[str] = mapped_column()
     doctype: Mapped[str] = mapped_column()
-    status: Mapped[str] = mapped_column(default=("Pending"))  # "pending", "approved", "rejected"
+    status: Mapped[str] = mapped_column(default=("Pending"))  # "pending", "approved", "denied"
     user: Mapped["User"] = relationship("User", back_populates="documents")
 
     user_id: Mapped[int] = mapped_column(db.ForeignKey('users.id'), name="fk_documents_user_id")
