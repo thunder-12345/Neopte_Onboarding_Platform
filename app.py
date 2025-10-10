@@ -4,7 +4,7 @@ from project.decorators import permission_required
 from flask import render_template, redirect, request, url_for, flash 
 from flask_login import login_user, login_required, logout_user, current_user
 from project.models import User, Document, Hours
-from project.forms import RegistrationForm, LoginForm 
+from project.forms import RegistrationForm, LoginForm, AddHoursForm
 from distutils.log import debug
 from fileinput import filename
 import random
@@ -152,6 +152,59 @@ def board_dashboard():
 def admin_dashboard():
     user = User.query.all()  # Get all users
     return render_template("admin_home.html", user = user)
+
+@app.route("/specific/log/hours", methods=["GET", "POST"])
+@login_required
+@permission_required('volunteer')
+def specific_log_hours():
+    return render_template('specific_user_hours_log.html') 
+
+# create a specific users hours log view 
+    # volunteer/intern view
+        # table to view their own hours previously added
+    # board/admin view 
+        # view the specific user's hours log table selected with status change ability
+
+# create a hours log view w dif permissions for each role 
+    # volunteer/intern view (Navbar says Add Hours)
+        # form to add hours and other details
+        # button to click to view their own hours previously added - routes to specific_user_hours 
+    # board/admin view (Navbar says View Hours)
+        # select user from user list to view their hours logged in a table including status change ability
+
+        # DO THIS!! seperate table to view all pending hours with ability to approve/deny (similar to notifications) - do this for documents too
+@app.route("/hours/log", methods=["GET", "POST"])
+@login_required
+@permission_required('volunteer')
+def hours_log():
+    if current_user.role in ['volunteer', 'intern']:
+        form = AddHoursForm()  # Create form to add hours
+    
+        if request.method == "POST":
+            if form.validate_on_submit():  # If form is valid
+                log = Hours(
+                    activity_name=form.data['activity_name'],
+                    date=form.data['date'],
+                    start_time=form.data['start_time'],
+                    end_time=form.data['end_time'],
+                    amount=form.data['amount'],
+                    description=form.data['description'],
+                    user=current_user
+                )
+                db.session.add(log)
+                db.session.commit()
+                flash("You have logged your hours!")
+                return redirect(url_for('specific_log_hours'))
+            else:
+                flash("Error")
+                print("Form errors:", form.errors)
+
+        return render_template('hours_log.html', form=form) 
+    
+    # else:  # board or admin
+        # documents = Document.query.all()
+        # users = User.query.all()
+        # return render_template("document_status_list.html", documents=documents, users=users, role=current_user.role)
 
 # if volunteer or intern, view the documents they've uploaded and their status
 # if board or admin, view all documents and status and ability to change their status

@@ -1,0 +1,55 @@
+<!-- display the specific users table of hours and whatnot based on passed in user -->
+
+{% extends "base.html" %}
+{% block content %}
+
+<h1>User Hour Log</h1>
+    <ol>
+        {% if role != "admin" and role != "board" %} 
+            <table class="table table-hover">
+                <thead class = "thead-light">
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Activity Name</th>
+                    <th scope="col">Date</th>
+                    <th scope="col">Start Time</th>
+                    <th scope="col">End Time</th>
+                    <!-- calculate the hours based on the start and end times and then add up total at end row -->
+                    <th scope="col">Total Hours</th> 
+                    <th scope="col">Description</th>
+                    <th scope="col">Status</th>
+                </tr>
+                </thead>
+
+            <tbody> 
+                {% for log in current_user.hours %}
+                    {% set log_num = loop.index %}
+                    <tr>
+                        <th scope="row">{{log_num}}</th>
+                        <td>{{log.activity_name}}</td>
+                        <td>{{log.date}}</td>
+                        <td>{{log.start_time}}</td>
+                        <td>{{log.end_time}}</td>
+                        <td>{{log.amount}}</td>
+                        <td>{{log.description}}</td>
+                        <td>{{log.status}}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+            </table>
+        
+        {% else %}
+            <!-- display user list which can then be clicked on to display the specific users documents -->
+            {% for user in users %}
+            <li>
+                {{ user.name }}
+                <span class="id">(ID: {{ user.id }})</span>
+                <span class="role">(Role: {{ user.role }})</span>
+                
+            </li> 
+            {% endfor %}
+
+        {% endif %}
+    </ol>
+{% endblock %}
+

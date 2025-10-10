@@ -2,7 +2,10 @@ from project import db, login_manager
 from werkzeug.security import generate_password_hash,check_password_hash
 from flask_login import UserMixin
 from typing import List
+from sqlalchemy import Date, DateTime, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from datetime import date, datetime
+
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -23,7 +26,7 @@ class User(db.Model, UserMixin):
     def __init__(self, name, email, password, role="user"):
         self.name = name
         self.email = email
-        self.password_hash = generate_password_hash(password)
+        self.password_hash = generate_password_hash(password, method = "pbkdf2:sha256")
         self.role = role
 
     def check_password(self, input_password):
@@ -34,22 +37,30 @@ class User(db.Model, UserMixin):
 
 
 class Hours(db.Model):
+
     __tablename__ = 'hours'
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    date: Mapped[str] = mapped_column()
+    activity_name: Mapped[str] = mapped_column()
+    date: Mapped[datetime.date] = mapped_column(Date, server_default=func.current_date())
+    start_time: Mapped[datetime.time] = mapped_column(db.Time)
+    end_time: Mapped[datetime.time] = mapped_column(db.Time)
     amount: Mapped[float] = mapped_column()
     description: Mapped[str] = mapped_column()
+    status: Mapped[str] = mapped_column(default=("Pending"))  # "pending", "approved", "denied"
     user: Mapped["User"] = relationship("User", back_populates="hours")
-
 
     user_id: Mapped[int] = mapped_column(db.ForeignKey('users.id'), name="fk_hours_user_id")
 
-    def __init__(self, date, amount, description, user):
+    def __init__(self, activity_name, date, start_time, end_time, amount, description, user, status="Pending"):
+        self.activity_name = activity_name
         self.date = date
+        self.start_time = start_time
+        self.end_time = end_time
         self.amount = amount
         self.description = description
         self.user = user
+        self.status = status
 
 
 class Document(db.Model):

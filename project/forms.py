@@ -1,8 +1,9 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField
-from wtforms.validators import DataRequired, Email, EqualTo
+from wtforms import StringField, PasswordField, SubmitField, FloatField
+from wtforms.validators import DataRequired, Email, EqualTo, NumberRange
 from wtforms import ValidationError
-
+from wtforms.fields import DateField, DateTimeField 
+from wtforms_components import TimeField
 from project.models import User
 
 class RegistrationForm(FlaskForm): 
@@ -22,4 +23,12 @@ class LoginForm(FlaskForm):
     password = PasswordField("Password: ", validators = [DataRequired()])
     submit = SubmitField("Login")
 
+class AddHoursForm(FlaskForm):
+    activity_name = StringField("Activity Name: ", validators=[DataRequired()])
+    date = DateField('Date:', format='%Y-%m-%d', validators=[DataRequired()])
+    start_time = TimeField("Start Time: ", validators=[DataRequired()])
+    end_time = TimeField("End Time: ", validators=[DataRequired()])
+    amount = FloatField("Amount of Hours: ", validators=[DataRequired(), NumberRange(0, 24, "Must be between 0 and 24 hours") ])
+    description = StringField("Description: ", validators=[DataRequired()])
+    submit = SubmitField("Add Hours")
 

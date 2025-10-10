@@ -32,6 +32,12 @@
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('document_status') }}">Document Status</a>
           </li>
+          <li class="nav-item">
+            <a class="nav-link" 
+            href="{{ url_for('hours_log') }}">
+                View Hours Log </a>
+          </li>
+          
           {% else %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('register') }}">Register</a>

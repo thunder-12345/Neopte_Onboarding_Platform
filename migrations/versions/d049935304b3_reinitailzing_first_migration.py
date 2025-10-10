@@ -1,8 +1,8 @@
-"""initial
+"""reinitailzing first migration
 
-Revision ID: 914b5159e2da
+Revision ID: d049935304b3
 Revises: 
-Create Date: 2025-09-24 21:11:17.707107
+Create Date: 2025-10-10 01:10:35.133802
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '914b5159e2da'
+revision = 'd049935304b3'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -38,9 +38,13 @@ def upgrade():
     )
     op.create_table('hours',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('date', sa.String(), nullable=False),
+    sa.Column('activity_name', sa.String(), nullable=False),
+    sa.Column('date', sa.Date(), server_default=sa.text('(CURRENT_DATE)'), nullable=False),
+    sa.Column('start_time', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('end_time', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
     sa.Column('amount', sa.Float(), nullable=False),
     sa.Column('description', sa.String(), nullable=False),
+    sa.Column('status', sa.String(), nullable=False),
     sa.Column('fk_hours_user_id', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['fk_hours_user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
