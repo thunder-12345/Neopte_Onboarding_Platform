@@ -4,23 +4,25 @@
 {% block content %}
 
 <h1>User Hour Log</h1>
-    <ol>
-        {% if role != "admin" and role != "board" %} 
-            <table class="table table-hover">
-                <thead class = "thead-light">
-                <tr>
-                    <th scope="col">#</th>
-                    <th scope="col">Activity Name</th>
-                    <th scope="col">Date</th>
-                    <th scope="col">Start Time</th>
-                    <th scope="col">End Time</th>
-                    <!-- calculate the hours based on the start and end times and then add up total at end row -->
-                    <th scope="col">Total Hours</th> 
-                    <th scope="col">Description</th>
-                    <th scope="col">Status</th>
-                </tr>
-                </thead>
 
+<table class="table table-hover">
+    <thead class = "thead-light">
+    <tr>
+        <th scope="col">#</th>
+        <th scope="col">Activity Name</th>
+        <th scope="col">Date</th>
+        <th scope="col">Start Time</th>
+        <th scope="col">End Time</th>
+        <!-- calculate the hours based on the start and end times and then add up total at end row -->
+        <th scope="col">Total Hours</th> 
+        <th scope="col">Description</th>
+        <th scope="col">Status</th>
+    </tr>
+    </thead>
+
+    <ol>
+        {% if current_user.role != "admin" and current_user.role != "board" %} 
+            {{current_user.name}}
             <tbody> 
                 {% for log in current_user.hours %}
                     {% set log_num = loop.index %}
@@ -39,16 +41,46 @@
             </table>
         
         {% else %}
-            <!-- display user list which can then be clicked on to display the specific users documents -->
-            {% for user in users %}
-            <li>
-                {{ user.name }}
-                <span class="id">(ID: {{ user.id }})</span>
-                <span class="role">(Role: {{ user.role }})</span>
-                
-            </li> 
+            {{user.name}}
+            {% for log in user.hours %}
+                {% set log_num = loop.index %}
+                <tbody> 
+                <tr>
+                    <th scope="row">{{log_num}}</th>
+                    <td>{{log.activity_name}}</td>
+                    <td>{{log.date}}</td>
+                    <td>{{log.start_time}}</td>
+                    <td>{{log.end_time}}</td>
+                    <td>{{log.amount}}</td>
+                    <td>{{log.description}}</td>
+                    <td>{{log.status}}
+                        <div class="btn-group" role="group">
+                            <button id="btnGroupDrop1" type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="btnGroupDrop1">
+                            <form action="{{ url_for('update_hours_log_status') }}" method="post" style="display:inline;">
+                                <input type="hidden" name="log_id" value="{{ log.id }}">
+                                <input type="hidden" name="new_status" value="Pending">
+                                <button type="submit" class="dropdown-item">Pending</button>
+                            </form>
+                            <form action="{{ url_for('update_hours_log_status') }}" method="post" style="display:inline;">
+                                <input type="hidden" name="log_id" value="{{ log.id }}">
+                                <input type="hidden" name="new_status" value="Approved">
+                                <button type="submit" class="dropdown-item">Approved</button>
+                            </form>
+                            <form action="{{ url_for('update_hours_log_status') }}" method="post" style="display:inline;">
+                                <input type="hidden" name="log_id" value="{{ log.id }}">
+                                <input type="hidden" name="new_status" value="Denied">
+                                <button type="submit" class="dropdown-item">Denied</button>
+                            </form>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
             {% endfor %}
-
+            </tbody>
+            </table>
         {% endif %}
     </ol>
 {% endblock %}

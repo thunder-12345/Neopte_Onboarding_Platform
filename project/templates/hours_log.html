@@ -26,11 +26,13 @@
             <!-- display user list which can then be clicked on to display the specific users documents -->
             {% for user in users %}
             <li>
-                {{ user.name }}
-                <span class="id">(ID: {{ user.id }})</span>
-                <span class="role">(Role: {{ user.role }})</span>
-                
-            </li> 
+                <form action="{{ url_for('specific_log_hours') }}" method="get" style="display:inline;">
+                    <input type="hidden" name="user_id" value="{{ user.id }}">
+                    <button type="submit">{{ user.name }}</button>
+                    <span class="id">(ID: {{ user.id }})</span>
+                    <span class="role">(Role: {{ user.role }})</span>
+                </form>
+            </li>      
             {% endfor %}
 
         {% endif %}

@@ -157,7 +157,18 @@ def admin_dashboard():
 @login_required
 @permission_required('volunteer')
 def specific_log_hours():
-    return render_template('specific_user_hours_log.html') 
+    user_id = request.args.get('user_id') or request.form.get('user_id')
+
+    if user_id:
+        user = User.query.get(user_id)
+        if user:
+            return render_template('specific_user_hours_log.html', user=user)
+        else:
+            flash("User not found.")
+            return redirect(url_for(redirect_target.get(current_user.role, "user_dashboard")))
+    
+    # For volunteer/intern viewing their own hours
+    return render_template('specific_user_hours_log.html', user=current_user)
 
 # create a specific users hours log view 
     # volunteer/intern view
@@ -198,10 +209,25 @@ def hours_log():
             else:
                 flash("Error")
                 print("Form errors:", form.errors)
+
+        # Return template on GET or if form fails validation
+        return render_template("hours_log.html", form=form)
+    
     else:  # board or admin
         users = User.query.all()
         return render_template("hours_log.html", users=users)
-    
+
+@app.route("/hours/log/update_status/", methods=["POST"])
+@login_required
+@permission_required('board')    
+def update_hours_log_status():
+    log_id = request.form.get("log_id", type=int)  
+    new_status = request.form.get("new_status", type=str)  
+    log = Hours.query.get(log_id)
+    if log:
+        log.status = new_status
+        db.session.commit()
+    return redirect(url_for('specific_log_hours', user_id=log.user_id))
 
 # if volunteer or intern, view the documents they've uploaded and their status
 # if board or admin, view all documents and status and ability to change their status
