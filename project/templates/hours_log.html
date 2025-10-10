@@ -1,11 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
-<br>
-<h3>Request Hours Below: </h3>
-<br>
     <ol>
-        {% if role != "admin" and role != "board" %} 
-            
+        {% if current_user.role != "admin" and current_user.role != "board" %} 
+            <br>
+            <h3>Request Hours Below: </h3>
+            <br>
             <form method="POST" action="{{ url_for('hours_log') }}">
                 {# hidden_tag is a CSRF security feature. #}
                 {{ form.hidden_tag() }}
@@ -25,14 +24,14 @@
 
         {% else %}
             <!-- display user list which can then be clicked on to display the specific users documents -->
-            <!-- {% for user in users %}
+            {% for user in users %}
             <li>
                 {{ user.name }}
                 <span class="id">(ID: {{ user.id }})</span>
                 <span class="role">(Role: {{ user.role }})</span>
                 
             </li> 
-            {% endfor %} -->
+            {% endfor %}
 
         {% endif %}
     </ol>

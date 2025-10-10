@@ -198,13 +198,10 @@ def hours_log():
             else:
                 flash("Error")
                 print("Form errors:", form.errors)
-
-        return render_template('hours_log.html', form=form) 
+    else:  # board or admin
+        users = User.query.all()
+        return render_template("hours_log.html", users=users)
     
-    # else:  # board or admin
-        # documents = Document.query.all()
-        # users = User.query.all()
-        # return render_template("document_status_list.html", documents=documents, users=users, role=current_user.role)
 
 # if volunteer or intern, view the documents they've uploaded and their status
 # if board or admin, view all documents and status and ability to change their status
