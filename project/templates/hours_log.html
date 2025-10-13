@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
+
     <ol>
         {% if current_user.role != "admin" and current_user.role != "board" %} 
             <br>
@@ -24,17 +25,32 @@
 
         {% else %}
             <!-- display user list which can then be clicked on to display the specific users documents -->
+             <table class="table table-hover">
+            <thead>
+                <tr>
+                <th scope="col">NAME</th>
+                <th scope="col">ID</th>
+                <th scope="col">ROLE</th>
+                <th scope="col">HOURS LOG</th>
+                </tr>
+            </thead>
+            <tbody>
             {% for user in users %}
-            <li>
+            {% set log_num = loop.index %}
+            
                 <form action="{{ url_for('specific_log_hours') }}" method="get" style="display:inline;">
+                    <tr>
                     <input type="hidden" name="user_id" value="{{ user.id }}">
-                    <button type="submit">{{ user.name }}</button>
-                    <span class="id">(ID: {{ user.id }})</span>
-                    <span class="role">(Role: {{ user.role }})</span>
+                    <td><span class="id">{{ user.name }}</span></td>
+                    <td><span class="id">{{ user.id }}</span></td>
+                    <td><span class="role">{{ user.role }}</span></td>
+                    <td><button type="submit">View Hours</button></td>
+                    </tr>
                 </form>
-            </li>      
-            {% endfor %}
 
+            {% endfor %}
+            </tbody>
+            </table>
         {% endif %}
     </ol>
 {% endblock %}

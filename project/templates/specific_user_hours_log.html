@@ -3,8 +3,6 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h1>User Hour Log</h1>
-
 <table class="table table-hover">
     <thead class = "thead-light">
     <tr>
@@ -22,7 +20,10 @@
 
     <ol>
         {% if current_user.role != "admin" and current_user.role != "board" %} 
-            {{current_user.name}}
+            <div class="username-header">
+                <h2>Your Hour Log</h2>
+            </div>
+            <br> 
             <tbody> 
                 {% for log in current_user.hours %}
                     {% set log_num = loop.index %}
@@ -41,7 +42,10 @@
             </table>
         
         {% else %}
-            {{user.name}}
+            <div class="username-header">
+                <h2>User Hour Log for {{current_user.name}}</h2>
+            </div>
+            <br> 
             {% for log in user.hours %}
                 {% set log_num = loop.index %}
                 <tbody> 
