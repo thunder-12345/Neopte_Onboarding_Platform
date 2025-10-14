@@ -25,7 +25,7 @@
 
         {% else %}
             <!-- display user list which can then be clicked on to display the specific users documents -->
-             <table class="table table-hover">
+            <table class="table table-hover">
             <thead>
                 <tr>
                 <th scope="col">NAME</th>
@@ -36,7 +36,7 @@
             </thead>
             <tbody>
             {% for user in users %}
-            {% set log_num = loop.index %}
+                {% set log_num = loop.index %}
             
                 <form action="{{ url_for('specific_log_hours') }}" method="get" style="display:inline;">
                     <tr>

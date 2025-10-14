@@ -1,60 +1,75 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h1>Document List</h1>
     <ol>
         {% if role != "admin" and role != "board" %} 
-        <ol>
-            {% for doc in current_user.documents %}
-            <li>
-                <p>File Name: {{ doc.filename }}</p>
-                <p>Description: {{ doc.description }}</p>
-                <p>Status: {{ doc.status }}</p>
-                <br>
-            </li>        
-            {% endfor %}
-        </ol>    
-        {% else %}
-        
-            {% for user in users %}
-            <li>
-                {{ user.name }}
-                <span class="id">(ID: {{ user.id }})</span>
-                <span class="role">(Role: {{ user.role }})</span>
-                <ol>
-                {% for doc in user.documents %}
-                <li>
-                    <span>File Name: {{ doc.filename }}. <span>
-                    <div class="btn-group" role="group">
-                        <button id="btnGroupDrop1" type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                        Status: {{ doc.status }}
-                        </button>
-                        <ul class="dropdown-menu" aria-labelledby="btnGroupDrop1">
-                        <form action="{{ url_for('update_document_status') }}" method="post" style="display:inline;">
-                            <input type="hidden" name="doc_id" value="{{ doc.id }}">
-                            <input type="hidden" name="new_status" value="Pending">
-                            <button type="submit" class="dropdown-item">Pending</button>
-                        </form>
-                        <form action="{{ url_for('update_document_status') }}" method="post" style="display:inline;">
-                            <input type="hidden" name="doc_id" value="{{ doc.id }}">
-                            <input type="hidden" name="new_status" value="Approved">
-                            <button type="submit" class="dropdown-item">Approved</button>
-                        </form>
-                        <form action="{{ url_for('update_document_status') }}" method="post" style="display:inline;">
-                            <input type="hidden" name="doc_id" value="{{ doc.id }}">
-                            <input type="hidden" name="new_status" value="Denied">
-                            <button type="submit" class="dropdown-item">Denied</button>
-                        </form>
-                        </ul>
-                    </div>
-                    <p>Description: {{ doc.description }}</p>
-                    <br>    
-                </li>    
-                {% endfor %}
-                </ol>
-            </li> 
-            {% endfor %}
 
+        <div class="mb-3">
+            <form action="/documents/status" method="POST" enctype="multipart/form-data">  
+                <label for="description" class="form-label mt-2">File Description</label>
+                <input class="form-control" type="text" name="description" id="description" placeholder="Enter file description" required>
+                <br>
+                <label for="formFileMultiple" class="form-label">Upload your documents below!</label>
+                <input class="form-control" type="file" name="file" id="formFileMultiple" multiple > 
+                <br>
+                <input type="submit" value="Upload">  
+            </form> 
+        </div>
+        {% if justTriedUpload %}
+            {% if allGood %}
+                <div class="alert alert-success d-flex align-items-center" role="alert">
+                    <svg class="bi flex-shrink-0 me-2" width="24" height="24" role="img" aria-label="Success:"><use xlink:href="#check-circle-fill"/></svg>
+                    <div>
+                        {{ msg }}
+                    </div>
+                </div>            
+
+            {% else%}
+                <div class="alert alert-warning d-flex align-items-center" role="alert">
+                <svg class="bi flex-shrink-0 me-2" width="24" height="24" role="img" aria-label="Warning:"><use xlink:href="#exclamation-triangle-fill"/></svg>
+                <div>
+                    {{ msg }}
+                </div>
+                </div>
+            {% endif %}
+        {% endif %}
+
+        <br> <br>
+        <div class="d-grid gap-2">
+            <button class="btn btn-primary" type="button"><a class="nav-link" href="{{ url_for('specific_log_document') }}">VIEW DOCUMENTS UPLOADED</a></button>
+        </div>
+
+        {% else %}
+            <!-- display user list which can then be clicked on to display the specific users documents -->
+            <table class="table table-hover">
+            <thead>
+                <tr>
+                <th scope="col">NAME</th>
+                <th scope="col">ID</th>
+                <th scope="col">ROLE</th>
+                <th scope="col">DOCUMENTS LOG</th>
+                </tr>
+            </thead>
+            
+            <tbody>
+
+            {% for user in users %}
+
+                {% set log_num = loop.index %}
+            
+                <form action="{{ url_for('specific_log_document') }}" method="get" style="display:inline;">
+                    <tr>
+                    <input type="hidden" name="user_id" value="{{ user.id }}">
+                    <td><span class="id">{{ user.name }}</span></td>
+                    <td><span class="id">{{ user.id }}</span></td>
+                    <td><span class="role">{{ user.role }}</span></td>
+                    <td><button type="submit">View Document Log</button></td>
+                    </tr>
+                </form>
+            
+            {% endfor %}
+            </tbody>
+            </table>
         {% endif %}
     </ol>
 {% endblock %}

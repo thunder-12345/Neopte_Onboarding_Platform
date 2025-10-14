@@ -2,7 +2,7 @@ from project import db, login_manager
 from werkzeug.security import generate_password_hash,check_password_hash
 from flask_login import UserMixin
 from typing import List
-from sqlalchemy import Date, DateTime, func
+from sqlalchemy import Date, DateTime, func, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from datetime import date, datetime
 
@@ -42,12 +42,12 @@ class Hours(db.Model):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     activity_name: Mapped[str] = mapped_column()
-    date: Mapped[datetime.date] = mapped_column(Date, server_default=func.current_date())
+    date: Mapped[datetime.date] = mapped_column(Date)
     start_time: Mapped[datetime.time] = mapped_column(db.Time)
     end_time: Mapped[datetime.time] = mapped_column(db.Time)
     amount: Mapped[float] = mapped_column()
     description: Mapped[str] = mapped_column()
-    status: Mapped[str] = mapped_column(default=("Pending"))  # "pending", "approved", "denied"
+    status: Mapped[str] = mapped_column(server_default=text("'Pending'"))  # "pending", "approved", "denied"
     user: Mapped["User"] = relationship("User", back_populates="hours")
 
     user_id: Mapped[int] = mapped_column(db.ForeignKey('users.id'), name="fk_hours_user_id")

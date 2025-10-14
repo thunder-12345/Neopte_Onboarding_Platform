@@ -168,7 +168,7 @@ def specific_log_hours():
             return redirect(url_for(redirect_target.get(current_user.role, "user_dashboard")))
     
     # For volunteer/intern viewing their own hours
-    return render_template('specific_user_hours_log.html', user=current_user)
+    return render_template('specific_user_hours_log.html')
 
 # create a specific users hours log view 
     # volunteer/intern view
@@ -231,10 +231,42 @@ def update_hours_log_status():
 
 # if volunteer or intern, view the documents they've uploaded and their status
 # if board or admin, view all documents and status and ability to change their status
-@app.route("/documents/status")
+@app.route("/documents/status", methods = ["GET", "POST"])
 @login_required
 @permission_required('volunteer')
 def document_status():
+    # handle file uploads
+    if request.method == 'POST':  
+        uploaded_files = request.files.getlist('file')  # note: 'file' is the input name
+        saved_files = []
+    
+        for f in uploaded_files:
+            if f.filename:  # skip empty uploads
+                if not allowed_file(f.filename):
+                    return render_template( "document_status_list.html", 
+                                           names=saved_files, 
+                                           msg="File extension not allowed", 
+                                           allGood = False, justTriedUpload=True) 
+                    
+        for f in uploaded_files:
+            if f.filename:  # skip empty uploads
+                f.save(os.path.join(app.config['UPLOAD_PATH'], f.filename))
+                saved_files.append(f.filename)
+                description = request.form.get("description", type=str)  # Get description from form
+                document = Document(
+                    filename=f.filename,
+                    doctype=f.content_type,
+                    description = description,
+                    user=current_user
+                )
+                db.session.add(document)
+                db.session.commit()
+                                    
+        return render_template("document_status_list.html", 
+                               names=saved_files, 
+                               msg="File(s) uploaded successfully", 
+                               allGood = True, justTriedUpload=True)
+    
     if current_user.role in ['volunteer', 'intern']:
         documents = Document.query.filter_by(user_id=current_user.id).all()
         return render_template("document_status_list.html", documents=documents, role=current_user.role)
@@ -257,41 +289,23 @@ def update_document_status():
         
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['UPLOAD_EXTENSIONS']
-
-# File upload success handler (handles file uploads and shows acknowledgement)
-@login_required
-@app.route('/file/upload', methods = ['POST'])  
-def file_upload():  
-    if request.method == 'POST':  
-        uploaded_files = request.files.getlist('file')  # note: 'file' is the input name
-        saved_files = []
     
-        for f in uploaded_files:
-            if f.filename:  # skip empty uploads
-                if not allowed_file(f.filename):
-                    return render_template( "acknowledgement.html", 
-                                           names=saved_files, 
-                                           msg="File extension not allowed", 
-                                           allGood = False )
-                    
-        for f in uploaded_files:
-            if f.filename:  # skip empty uploads
-                f.save(os.path.join(app.config['UPLOAD_PATH'], f.filename))
-                saved_files.append(f.filename)
-                description = request.form.get("description", type=str)  # Get description from form
-                document = Document(
-                    filename=f.filename,
-                    doctype=f.content_type,
-                    description = description,
-                    user=current_user
-                )
-                db.session.add(document)
-                db.session.commit()
-                                    
-        return render_template("acknowledgement.html", 
-                               names=saved_files, 
-                               msg="File(s) uploaded successfully", 
-                               allGood = True)
+@app.route("/specific/log/document", methods=["GET", "POST"])
+@login_required
+@permission_required('volunteer')
+def specific_log_document():
+    user_id = request.args.get('user_id') or request.form.get('user_id')
+
+    if user_id:
+        user = User.query.get(user_id)
+        if user:
+            return render_template('specific_user_document.html', user=user)
+        else:
+            flash("User not found.")
+            return redirect(url_for(redirect_target.get(current_user.role, "user_dashboard")))
+    
+    # For volunteer/intern viewing their own document
+    return render_template('specific_user_document.html', user=current_user)
     
 # Registration route (handles user registration)
 @app.route("/register", methods=["GET", "POST"])

@@ -1,0 +1,84 @@
+<!-- display the specific users table of hours and whatnot based on passed in user -->
+
+{% extends "base.html" %}
+{% block content %}
+
+<table class="table table-hover">
+    <thead class = "thead-light">
+    <tr>
+        <th scope="col">#</th>
+        <th scope="col">File Name</th>
+        <th scope="col">ID</th>
+        <th scope="col">Role</th>
+        <th scope="col">File Description</th>        
+        <th scope="col">Status</th>
+    </tr>
+    </thead>
+
+    <ol>
+        {% if current_user.role != "admin" and current_user.role != "board" %} 
+            <div class="username-header">
+                <h2>Your Hour Log</h2>
+            </div>
+            <br> 
+            <tbody> 
+                {% for doc in current_user.documents %}
+                    {% set log_num = loop.index %}
+                    <tr>
+                        <th scope="row">{{log_num}}</th>
+                        <td>{{doc.filename}}</td>
+                        <td>{{doc.id}}</td>
+                        <td>{{current_user.role}}</td>
+                        <td>{{doc.description}}</td>
+                        <td>{{doc.status}}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+            </table>
+        
+        {% else %}
+            <div class="username-header">
+                <h2>Document Log for {{user.name}}</h2>
+            </div>
+            <br> 
+            {% for doc in user.documents %}
+                {% set log_num = loop.index %}
+                <tbody> 
+                <tr>
+                    <th scope="row">{{log_num}}</th>
+                    <td>{{doc.filename}}</td>
+                    <td>{{doc.id}}</td>
+                    <td>{{user.role}}</td>
+                    <td>{{doc.description}}</td>
+                    <td>{{doc.status}}
+                        <div class="btn-group" role="group">
+                            <button id="btnGroupDrop1" type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="btnGroupDrop1">
+                            <form action="{{ url_for('update_document_status') }}" method="post" style="display:inline;">
+                                <input type="hidden" name="doc_id" value="{{ doc.id }}">
+                                <input type="hidden" name="new_status" value="Pending">
+                                <button type="submit" class="dropdown-item">Pending</button>
+                            </form>
+                            <form action="{{ url_for('update_document_status') }}" method="post" style="display:inline;">
+                                <input type="hidden" name="doc_id" value="{{ doc.id }}">
+                                <input type="hidden" name="new_status" value="Approved">
+                                <button type="submit" class="dropdown-item">Approved</button>
+                            </form>
+                            <form action="{{ url_for('update_document_status') }}" method="post" style="display:inline;">
+                                <input type="hidden" name="doc_id" value="{{ doc.id }}">
+                                <input type="hidden" name="new_status" value="Denied">
+                                <button type="submit" class="dropdown-item">Denied</button>
+                            </form>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+            </table>
+        {% endif %}
+    </ol>
+{% endblock %}
+
