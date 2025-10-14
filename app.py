@@ -278,9 +278,11 @@ def file_upload():
             if f.filename:  # skip empty uploads
                 f.save(os.path.join(app.config['UPLOAD_PATH'], f.filename))
                 saved_files.append(f.filename)
+                description = request.form.get("description", type=str)  # Get description from form
                 document = Document(
                     filename=f.filename,
                     doctype=f.content_type,
+                    description = description,
                     user=current_user
                 )
                 db.session.add(document)

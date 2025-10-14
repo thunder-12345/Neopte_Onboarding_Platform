@@ -8,6 +8,7 @@
             {% for doc in current_user.documents %}
             <li>
                 <p>File Name: {{ doc.filename }}</p>
+                <p>Description: {{ doc.description }}</p>
                 <p>Status: {{ doc.status }}</p>
                 <br>
             </li>        
@@ -46,7 +47,7 @@
                         </form>
                         </ul>
                     </div>
-                    
+                    <p>Description: {{ doc.description }}</p>
                     <br>    
                 </li>    
                 {% endfor %}

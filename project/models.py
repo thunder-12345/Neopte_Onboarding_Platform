@@ -70,14 +70,16 @@ class Document(db.Model):
     filename: Mapped[str] = mapped_column()
     doctype: Mapped[str] = mapped_column()
     status: Mapped[str] = mapped_column(default=("Pending"))  # "pending", "approved", "denied"
+    description: Mapped[str] = mapped_column(default="No description provided")
     user: Mapped["User"] = relationship("User", back_populates="documents")
 
     user_id: Mapped[int] = mapped_column(db.ForeignKey('users.id'), name="fk_documents_user_id")
 
-    def __init__(self, filename, doctype, user, status = "Pending"):
+    def __init__(self, filename, doctype, user, description = "No description provided",status = "Pending"):
         self.filename = filename
         self.doctype = doctype
         self.user = user
+        self.description = description
         self.status = status 
 
 
