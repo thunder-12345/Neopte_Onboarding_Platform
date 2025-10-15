@@ -10,8 +10,9 @@
         <th scope="col">File Name</th>
         <th scope="col">ID</th>
         <th scope="col">Role</th>
-        <th scope="col">File Description</th>        
+        <th scope="col">File Description</th>  
         <th scope="col">Status</th>
+        <th scope="col">View Document</th>
     </tr>
     </thead>
 
@@ -50,6 +51,14 @@
                     <td>{{doc.id}}</td>
                     <td>{{user.role}}</td>
                     <td>{{doc.description}}</td>
+                    <td>
+                        <form action="{{ url_for('view_pdf', doc_id=doc.id) }}" method="get" style="display:inline;">
+                            <input type="hidden" name="user_id" value="{{ user.id }}"> 
+                            <button type="submit">View</button>
+                        </form>
+                        <!-- <download link -->
+                            
+                    </td>
                     <td>{{doc.status}}
                         <div class="btn-group" role="group">
                             <button id="btnGroupDrop1" type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">

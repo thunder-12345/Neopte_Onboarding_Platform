@@ -1,7 +1,7 @@
 # Imports
 from project import db, app
 from project.decorators import permission_required
-from flask import render_template, redirect, request, url_for, flash 
+from flask import render_template, redirect, request, url_for, flash, send_from_directory
 from flask_login import login_user, login_required, logout_user, current_user
 from project.models import User, Document, Hours
 from project.forms import RegistrationForm, LoginForm, AddHoursForm
@@ -285,7 +285,7 @@ def update_document_status():
     if document:
         document.status = new_status
         db.session.commit()
-    return redirect(url_for('document_status'))
+    return redirect(request.referrer or url_for('document_status'))
         
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['UPLOAD_EXTENSIONS']
@@ -306,6 +306,21 @@ def specific_log_document():
     
     # For volunteer/intern viewing their own document
     return render_template('specific_user_document.html', user=current_user)
+
+@app.route('/view/<int:doc_id>', methods=['GET'])
+@login_required
+@permission_required('board')
+def view_pdf(doc_id):
+    doc = Document.query.get_or_404(doc_id)
+    user_id = request.args.get('user_id')
+    user = User.query.get(user_id)
+    return render_template('view_pdf.html', doc=doc, user = user)
+
+@app.route('/uploads/<filename>')
+@login_required
+@permission_required('board')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_PATH'], filename)
     
 # Registration route (handles user registration)
 @app.route("/register", methods=["GET", "POST"])
