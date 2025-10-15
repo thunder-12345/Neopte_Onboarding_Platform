@@ -24,6 +24,11 @@
 
 
         {% else %}
+            <br>
+            <div class="d-grid gap-2">
+                <button class="btn btn-primary" type="submit"><a class="nav-link" href="{{ url_for('pending_hours') }}">VIEW HOURS PENDING REVIEW</a></button>
+            </div>
+            <br> 
             <!-- display user list which can then be clicked on to display the specific users documents -->
             <table class="table table-hover">
             <thead>
