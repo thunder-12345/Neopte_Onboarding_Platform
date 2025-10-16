@@ -1,76 +1,37 @@
-<!-- display the specific users table of hours and whatnot based on passed in user -->
-
 {% extends "base.html" %}
 {% block content %}
+<h2> 
+    Pending Documents Review
+</h2>
+<br> 
+<table class="table table-hover">
+    <thead class = "thead-light">
+    <tr>
+        <th scope="col">#</th>
+        <th scope ="col">User Name</th>
+        <th scope="col">Role</th>
+        <th scope="col">File Name</th>
+        <th scope="col">Doc ID</th>
+        <th scope="col">File Description</th>  
+        <th scope="col">Status</th>
+        <th scope="col">View Document</th>
+    </tr>
+    </thead>
+<tbody>     
+{% set ns = namespace(log_num=0) %}
+{% for user in users %}
 
-    <ol>
-        {% if current_user.role != "admin" and current_user.role != "board" %} 
-            <div class="username-header">
-                <h2>Your Hour Log</h2>
-            </div>
-            <br> 
-
-            <table class="table table-hover">
-                <thead class = "thead-light">
-                <tr>
-                    <th scope="col">#</th>
-                    <th scope="col">File Name</th>
-                    <th scope="col">ID</th>
-                    <th scope="col">Role</th>
-                    <th scope="col">File Description</th>  
-                    <th scope="col">Status</th>
-                </tr>
-                </thead>
-            <tbody> 
-                {% for doc in current_user.documents %}
-                    {% set log_num = loop.index %}
-                    <tr>
-                        <th scope="row">{{log_num}}</th>
-                        <td>{{doc.filename}}</td>
-                        <td>{{doc.id}}</td>
-                        <td>{{current_user.role}}</td>
-                        <td>{{doc.description}}</td>
-                        <td>{{doc.status}}</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-            </table>
-        
-        {% else %}
-            <div class="username-header">
-                <h2>Document Log for {{user.name}}</h2>
-            </div>
-            <br> 
-            <table class="table table-hover">
-                <thead class = "thead-light">
-                <tr>
-                    <th scope="col">#</th>
-                    <th scope="col">File Name</th>
-                    <th scope="col">ID</th>
-                    <th scope="col">Role</th>
-                    <th scope="col">File Description</th>  
-                    <th scope="col">Status</th>
-                    <th scope="col">View Document</th>
-                </tr>
-                </thead>
-            {% for doc in user.documents %}
-                {% set log_num = loop.index %}
-                <tbody> 
-                <tr>
-                    <th scope="row">{{log_num}}</th>
-                    <td>{{doc.filename}}</td>
-                    <td>{{doc.id}}</td>
-                    <td>{{user.role}}</td>
-                    <td>{{doc.description}}</td>
-                    <td>
-                        <form action="{{ url_for('view_pdf', doc_id=doc.id) }}" method="get" style="display:inline;">
-                            <input type="hidden" name="user_id" value="{{ user.id }}"> 
-                            <button type="submit">View</button>
-                        </form>
-                        <!-- <download link -->
-                            
-                    </td>
-                    <td>{{doc.status}}
+    {% for doc in user.documents %}
+        {% if doc.status == "Pending" %}
+            {% set ns.log_num = ns.log_num + 1 %}   
+            <tr>
+                <th scope="row">{{ns.log_num}}</th>
+                <td>{{user.name}}</td>
+                <td>{{user.role}}</td>
+                <td>{{doc.filename}}</td>
+                <td>{{doc.id}}</td>
+                <td>{{doc.description}}</td>
+                <td>{{doc.status}}
                         <div class="btn-group" role="group">
                             <button id="btnGroupDrop1" type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                             
@@ -110,11 +71,19 @@
                             </ul>
                         </div>
                     </td>
-                </tr>
-            {% endfor %}
-            </tbody>
-            </table>
+                <td>
+                    <form action="{{ url_for('view_pdf', doc_id=doc.id) }}" method="get" style="display:inline;">
+                        <input type="hidden" name="user_id" value="{{ user.id }}"> 
+                        <input type="hidden" name="from_pending" value="{{ true }}"> 
+                        <button type="submit">View</button>
+                    </form>
+                </td>
+            </tr>
+            
         {% endif %}
-    </ol>
-{% endblock %}
+    {% endfor %}
+{% endfor %}
+</tbody>
+</table>
 
+{% endblock %}

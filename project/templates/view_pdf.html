@@ -12,7 +12,7 @@
             width="800" 
             height="900">
         </iframe>
-</div> 
+    </div> 
     <br>
     Status: {{doc.status}}
     <div class="btn-group" role="group">
@@ -55,6 +55,7 @@
     <br> <br> 
     <form action="{{ url_for('specific_log_document') }}" method="get" style="display:inline;">
         <input type="hidden" name="user_id" value="{{ user.id }}">
+        <input type="hidden" name="from_pending" value="{{ from_pending }}">
         <button type="submit">Back to Documents</button>
     </form>
 

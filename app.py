@@ -227,7 +227,14 @@ def update_hours_log_status():
     if log:
         log.status = new_status
         db.session.commit()
-    return redirect(url_for('specific_log_hours', user_id=log.user_id))
+    return redirect(request.referrer or url_for('specific_log_hours', user_id=log.user_id))
+
+@app.route('/pending/hours', methods=['GET'])
+@login_required
+@permission_required('board')
+def pending_hours():
+    users = User.query.all()  # Get all users
+    return render_template('pending_hours.html', users= users)
 
 # if volunteer or intern, view the documents they've uploaded and their status
 # if board or admin, view all documents and status and ability to change their status
@@ -295,7 +302,9 @@ def allowed_file(filename):
 @permission_required('volunteer')
 def specific_log_document():
     user_id = request.args.get('user_id') or request.form.get('user_id')
-
+    from_pending = request.args.get('from_pending', type=bool, default=False)
+    if from_pending:
+        return redirect(url_for('pending_documents'))
     if user_id:
         user = User.query.get(user_id)
         if user:
@@ -314,13 +323,21 @@ def view_pdf(doc_id):
     doc = Document.query.get_or_404(doc_id)
     user_id = request.args.get('user_id')
     user = User.query.get(user_id)
-    return render_template('view_pdf.html', doc=doc, user = user)
+    from_pending = request.args.get('from_pending', type=bool, default=False)
+    return render_template('view_pdf.html', doc=doc, user = user, from_pending=from_pending)
 
 @app.route('/uploads/<filename>')
 @login_required
 @permission_required('board')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_PATH'], filename)
+
+@app.route('/pending/documents', methods=['GET'])
+@login_required
+@permission_required('board')
+def pending_documents():
+    users = User.query.all()  # Get all users
+    return render_template('pending_documents.html', users= users)
     
 # Registration route (handles user registration)
 @app.route("/register", methods=["GET", "POST"])

@@ -4,42 +4,47 @@
     <ol>
         {% if role != "admin" and role != "board" %} 
 
-        <div class="mb-3">
-            <form action="/documents/status" method="POST" enctype="multipart/form-data">  
-                <label for="description" class="form-label mt-2">File Description</label>
-                <input class="form-control" type="text" name="description" id="description" placeholder="Enter file description" required>
-                <br>
-                <label for="formFileMultiple" class="form-label">Upload your documents below!</label>
-                <input class="form-control" type="file" name="file" id="formFileMultiple" required multiple> 
-                <br>
-                <input type="submit" value="Upload">  
-            </form> 
-        </div>
-        {% if justTriedUpload %}
-            {% if allGood %}
-                <div class="alert alert-success d-flex align-items-center" role="alert">
-                    <svg class="bi flex-shrink-0 me-2" width="24" height="24" role="img" aria-label="Success:"><use xlink:href="#check-circle-fill"/></svg>
+            <div class="mb-3">
+                <form action="/documents/status" method="POST" enctype="multipart/form-data">  
+                    <label for="description" class="form-label mt-2">File Description</label>
+                    <input class="form-control" type="text" name="description" id="description" placeholder="Enter file description" required>
+                    <br>
+                    <label for="formFileMultiple" class="form-label">Upload your documents below!</label>
+                    <input class="form-control" type="file" name="file" id="formFileMultiple" required multiple> 
+                    <br>
+                    <input type="submit" value="Upload">  
+                </form> 
+            </div>
+            {% if justTriedUpload %}
+                {% if allGood %}
+                    <div class="alert alert-success d-flex align-items-center" role="alert">
+                        <svg class="bi flex-shrink-0 me-2" width="24" height="24" role="img" aria-label="Success:"><use xlink:href="#check-circle-fill"/></svg>
+                        <div>
+                            {{ msg }}
+                        </div>
+                    </div>            
+
+                {% else%}
+                    <div class="alert alert-warning d-flex align-items-center" role="alert">
+                    <svg class="bi flex-shrink-0 me-2" width="24" height="24" role="img" aria-label="Warning:"><use xlink:href="#exclamation-triangle-fill"/></svg>
                     <div>
                         {{ msg }}
                     </div>
-                </div>            
-
-            {% else%}
-                <div class="alert alert-warning d-flex align-items-center" role="alert">
-                <svg class="bi flex-shrink-0 me-2" width="24" height="24" role="img" aria-label="Warning:"><use xlink:href="#exclamation-triangle-fill"/></svg>
-                <div>
-                    {{ msg }}
-                </div>
-                </div>
+                    </div>
+                {% endif %}
             {% endif %}
-        {% endif %}
 
-        <br> <br>
-        <div class="d-grid gap-2">
-            <button class="btn btn-primary" type="button"><a class="nav-link" href="{{ url_for('specific_log_document') }}">VIEW DOCUMENTS UPLOADED</a></button>
-        </div>
+            <br> <br>
+            <div class="d-grid gap-2">
+                <button class="btn btn-primary" type="button"><a class="nav-link" href="{{ url_for('specific_log_document') }}">VIEW DOCUMENTS UPLOADED</a></button>
+            </div>
 
         {% else %}
+            <br>
+            <div class="d-grid gap-2">
+                <button class="btn btn-primary" type="submit"><a class="nav-link" href="{{ url_for('pending_documents') }}">VIEW DOCUMENTS PENDING REVIEW</a></button>
+            </div>
+            <br> 
             <!-- display user list which can then be clicked on to display the specific users documents -->
             <table class="table table-hover">
             <thead>
