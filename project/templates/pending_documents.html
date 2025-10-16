@@ -18,13 +18,14 @@
     </tr>
     </thead>
 <tbody>     
+{% set ns = namespace(log_num=0) %}
 {% for user in users %}
 
     {% for doc in user.documents %}
         {% if doc.status == "Pending" %}
-            {% set log_num = loop.index %}
+            {% set ns.log_num = ns.log_num + 1 %}   
             <tr>
-                <th scope="row">{{log_num}}</th>
+                <th scope="row">{{ns.log_num}}</th>
                 <td>{{user.name}}</td>
                 <td>{{user.role}}</td>
                 <td>{{doc.filename}}</td>
@@ -78,6 +79,7 @@
                     </form>
                 </td>
             </tr>
+            
         {% endif %}
     {% endfor %}
 {% endfor %}
