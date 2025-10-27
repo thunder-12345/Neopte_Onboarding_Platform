@@ -1,7 +1,7 @@
 # Imports
 from project import db, app
 from project.decorators import permission_required
-from flask import render_template, redirect, request, url_for, flash, send_from_directory
+from flask import render_template, redirect, request, url_for, flash, send_from_directory, send_file
 from flask_login import login_user, login_required, logout_user, current_user
 from project.models import User, Document, Hours
 from project.forms import RegistrationForm, LoginForm, AddHoursForm
@@ -321,10 +321,19 @@ def specific_log_document():
 @permission_required('board')
 def view_pdf(doc_id):
     doc = Document.query.get_or_404(doc_id)
-    user_id = request.args.get('user_id')
-    user = User.query.get(user_id)
-    from_pending = request.args.get('from_pending', type=bool, default=False)
-    return render_template('view_pdf.html', doc=doc, user = user, from_pending=from_pending)
+    path = os.path.join(app.config['UPLOAD_PATH'], doc.filename)
+    return send_file(
+        path,
+        mimetype='application/pdf',
+        download_name=f'{doc.filename}.pdf',
+        as_attachment=False  # <-- makes it open inline
+    )
+
+    # doc = Document.query.get_or_404(doc_id)
+    # user_id = request.args.get('user_id')
+    # user = User.query.get(user_id)
+    # from_pending = request.args.get('from_pending', type=bool, default=False)
+    # return render_template('view_pdf.html', doc=doc, user = user, from_pending=from_pending)
 
 @app.route('/uploads/<filename>')
 @login_required
