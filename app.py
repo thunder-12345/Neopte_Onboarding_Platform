@@ -335,11 +335,11 @@ def view_pdf(doc_id):
     # from_pending = request.args.get('from_pending', type=bool, default=False)
     # return render_template('view_pdf.html', doc=doc, user = user, from_pending=from_pending)
 
-@app.route('/uploads/<filename>')
-@login_required
-@permission_required('board')
-def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_PATH'], filename)
+# @app.route('/uploads/<filename>')
+# @login_required
+# @permission_required('board')
+# def uploaded_file(filename):
+#     return send_from_directory(app.config['UPLOAD_PATH'], filename)
 
 @app.route('/pending/documents', methods=['GET'])
 @login_required

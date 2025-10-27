@@ -63,11 +63,10 @@
                     <td>{{user.role}}</td>
                     <td>{{doc.description}}</td>
                     <td>
-                        <form action="{{ url_for('view_pdf', doc_id=doc.id) }}" method="get" style="display:inline;">
-                            <input type="hidden" name="user_id" value="{{ user.id }}"> 
-                            <button type="submit">View</button>
-                        </form>
-                        <!-- <download link -->
+                        <a href="{{ url_for('view_pdf', doc_id=doc.id) }}" 
+                        class="btn btn-primary btn-sm pdf-popup-link">
+                        View
+                        </a>
                             
                     </td>
                     <td>{{doc.status}}
