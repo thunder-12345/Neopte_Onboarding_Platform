@@ -6,10 +6,15 @@
 
     <p>Please contact a board member to be assigned a role!</p>
   {% else %}
-    <p>Please login or register!</p>
+    <div class="alert alert-secondary" role="alert">
+    Please login or register!
+    </div>
+      
   {% endif %}
 </div>
 
-
+<div class="image-container">
+  <img src="{{ url_for('static', filename = 'neopte logo.jpeg') }}" alt="Neopte" width="400" height="300">
+</div>
 
 {% endblock %}

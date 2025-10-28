@@ -2,11 +2,15 @@
 {% block content %}
 <div class="jumbotron">
   {% if current_user.is_authenticated %}
-    <p>Hi {{ current_user.name }}! You are a volunteer!</p>
-    
-  {% else %}
-    <p>Please login or register!</p>
-  {% endif %}
+    <div class="alert alert-primary" role="alert">
+      Hi {{ current_user.name }}! You are a volunteer!
+    </div>
+  {% endif %}  
+
+  <div class="image-container">
+    <img src="{{ url_for('static', filename = 'neopte logo.jpeg') }}" alt="Neopte" width="400" height="300">
+  </div>
+  
 </div>
 
 
