@@ -379,7 +379,7 @@ def login():
 
         if user is not None and user.check_password(form.password.data):
             login_user(user)  # Log in user
-            flash('Logged in successfully.')
+            # flash('Logged in successfully.')
 
             # Redirect user based on their role
             print(user.role)
@@ -398,7 +398,7 @@ def login():
 @login_required
 def logout():
     logout_user()  # Log out user
-    flash("You have successfully logged out!")
+    # flash("You have successfully logged out!")
     return redirect(url_for("user_dashboard"))
 
 # Run the app if this file is executed directly

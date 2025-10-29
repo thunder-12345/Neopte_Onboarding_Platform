@@ -21,9 +21,76 @@
         height: 100%;
         object-fit: contain;
       }
+
+      #Auth_Page {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+
+        /* Page-specific background only for auth pages */
+        background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%);
+      }
+
+      #Auth_Page #Alignment {
+        background: #ffffff;
+        padding: 30px 40px;
+        border-radius: 12px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+        width: 350px;
+        text-align: center;
+      }
+
+      #Auth_Page #Alignment h2 {
+        margin-bottom: 20px;
+        font-size: 24px;
+        color: #333;
+      }
+
+      #Auth_Page #Inner_Content {
+        text-align: left;
+      }
+
+      #Auth_Page form div {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 15px;
+      }
+
+      #Auth_Page form label {
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #333;
+      }
+
+      #Auth_Page form input[type="text"],
+      #Auth_Page form input[type="email"],
+      #Auth_Page form input[type="password"] {
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      #Auth_Page form input[type="submit"],
+      #Auth_Page button {
+        width: 100%;
+        padding: 10px;
+        background-color: #66a6ff;
+        border: none;
+        border-radius: 6px;
+        color: white;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+
+      #Auth_Page form input[type="submit"]:hover,
+      #Auth_Page button:hover {
+        background-color: #558de8;
+      }
       </style>
-
-
   </head>
   <body>
     <nav class="navbar navbar-expand bg-dark border-bottom border-body" data-bs-theme="dark">

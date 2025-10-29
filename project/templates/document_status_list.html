@@ -1,80 +1,100 @@
 {% extends "base.html" %}
 {% block content %}
 
-    <ol>
-        {% if role != "admin" and role != "board" %} 
+    
+    {% if role != "admin" and role != "board" %} 
 
-            <div class="mb-3">
-                <form action="/documents/status" method="POST" enctype="multipart/form-data">  
-                    <label for="description" class="form-label mt-2">File Description</label>
-                    <input class="form-control" type="text" name="description" id="description" placeholder="Enter file description" required>
-                    <br>
-                    <label for="formFileMultiple" class="form-label">Upload your documents below!</label>
-                    <input class="form-control" type="file" name="file" id="formFileMultiple" required multiple> 
-                    <br>
-                    <input type="submit" value="Upload">  
-                </form> 
-            </div>
-            {% if justTriedUpload %}
-                {% if allGood %}
-                    <div class="alert alert-success d-flex align-items-center" role="alert">
-                        <svg class="bi flex-shrink-0 me-2" width="24" height="24" role="img" aria-label="Success:"><use xlink:href="#check-circle-fill"/></svg>
-                        <div>
-                            {{ msg }}
-                        </div>
-                    </div>            
+        <div id="Auth_Page">
+            <div id="Alignment">
+                <h3>Upload Documents</h3>
 
-                {% else%}
-                    <div class="alert alert-warning d-flex align-items-center" role="alert">
-                    <svg class="bi flex-shrink-0 me-2" width="24" height="24" role="img" aria-label="Warning:"><use xlink:href="#exclamation-triangle-fill"/></svg>
+                <div id="Inner_Content">
+                <form action="/documents/status" method="POST" enctype="multipart/form-data">
                     <div>
+                    <label for="description"><b>File Description</b></label>
+                    <input
+                        class="form-control"
+                        type="text"
+                        name="description"
+                        id="description"
+                        placeholder="Enter file description"
+                        required
+                    >
+                    </div>
+
+                    <div>
+                    <label for="formFileMultiple"><b>Upload your documents below!</b></label>
+                    <input
+                        class="form-control"
+                        type="file"
+                        name="file"
+                        id="formFileMultiple"
+                        required
+                        multiple
+                    >
+                    </div>
+
+                    <div>
+                    <input class="btn btn-primary" type="submit" value="Upload">
+                    </div>
+
+                    <div> 
+                        <a class="btn btn-success" href="{{ url_for('specific_log_document') }}">VIEW DOCUMENTS UPLOADED</a>
+                    </div>
+                </form>
+
+                {% if justTriedUpload %}
+                    {% if allGood %}
+                    <div class="alert alert-success" role="alert" style="margin-top: 15px;">
                         {{ msg }}
                     </div>
+                    {% else %}
+                    <div class="alert alert-warning" role="alert" style="margin-top: 15px;">
+                        {{ msg }}
                     </div>
+                    {% endif %}
                 {% endif %}
-            {% endif %}
 
-            <br> <br>
-            <div class="d-grid gap-2">
-                <button class="btn btn-primary" type="button"><a class="nav-link" href="{{ url_for('specific_log_document') }}">VIEW DOCUMENTS UPLOADED</a></button>
+                </div>
             </div>
+        </div>
 
-        {% else %}
-            <br>
-            <div class="d-grid gap-2">
-                <button class="btn btn-primary" type="submit"><a class="nav-link" href="{{ url_for('pending_documents') }}">VIEW DOCUMENTS PENDING REVIEW</a></button>
-            </div>
-            <br> 
-            <!-- display user list which can then be clicked on to display the specific users documents -->
-            <table class="table table-hover">
-            <thead>
+    {% else %}
+        <br>
+        <div class="d-grid gap-2">
+            <button class="btn btn-primary" type="submit"><a class="nav-link" href="{{ url_for('pending_documents') }}">VIEW DOCUMENTS PENDING REVIEW</a></button>
+        </div>
+        <br> 
+        <!-- display user list which can then be clicked on to display the specific users documents -->
+        <table class="table table-hover">
+        <thead>
+            <tr>
+            <th scope="col">NAME</th>
+            <th scope="col">ID</th>
+            <th scope="col">ROLE</th>
+            <th scope="col">DOCUMENTS LOG</th>
+            </tr>
+        </thead>
+        
+        <tbody>
+
+        {% for user in users %}
+
+            {% set log_num = loop.index %}
+        
+            <form action="{{ url_for('specific_log_document') }}" method="get" style="display:inline;">
                 <tr>
-                <th scope="col">NAME</th>
-                <th scope="col">ID</th>
-                <th scope="col">ROLE</th>
-                <th scope="col">DOCUMENTS LOG</th>
+                <input type="hidden" name="user_id" value="{{ user.id }}">
+                <td><span class="id">{{ user.name }}</span></td>
+                <td><span class="id">{{ user.id }}</span></td>
+                <td><span class="role">{{ user.role }}</span></td>
+                <td><button type="submit">View Document Log</button></td>
                 </tr>
-            </thead>
-            
-            <tbody>
-
-            {% for user in users %}
-
-                {% set log_num = loop.index %}
-            
-                <form action="{{ url_for('specific_log_document') }}" method="get" style="display:inline;">
-                    <tr>
-                    <input type="hidden" name="user_id" value="{{ user.id }}">
-                    <td><span class="id">{{ user.name }}</span></td>
-                    <td><span class="id">{{ user.id }}</span></td>
-                    <td><span class="role">{{ user.role }}</span></td>
-                    <td><button type="submit">View Document Log</button></td>
-                    </tr>
-                </form>
-            
-            {% endfor %}
-            </tbody>
-            </table>
-        {% endif %}
-    </ol>
+            </form>
+        
+        {% endfor %}
+        </tbody>
+        </table>
+    {% endif %}
+    
 {% endblock %}

@@ -1,12 +1,27 @@
 {% extends "base.html" %}
 {% block content %}
-<form method="POST" action="{{ url_for('login') }}">
-    {# This hidden_tag is a CSRF security feature. #}
-    {{ form.hidden_tag() }}
-    {{ form.email.label }} {{ form.email() }}
-    <br>
-    {{ form.password.label }} {{ form.password() }}
-    <br>
-    {{ form.submit() }}
-</form>
+<div id="Auth_Page">
+  <div id="Alignment">
+    <h2>Login</h2>
+    <div id="Inner_Content">
+      <form method="POST" action="{{ url_for('login') }}">
+        {{ form.hidden_tag() }}
+
+        <div>
+          {{ form.email.label }}
+          {{ form.email() }}
+        </div>
+
+        <div>
+          {{ form.password.label }}
+          {{ form.password() }}
+        </div>
+
+        <div>
+          {{ form.submit() }}
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 {% endblock %}
