@@ -90,6 +90,39 @@
       #Auth_Page button:hover {
         background-color: #558de8;
       }
+
+      /* Print Styles */
+      @media print {
+          nav, .navbar, header, footer, .btn, .dropdown, 
+          .dropdown-menu, .btn-group {
+              display: none !important;
+          }
+          
+          /* Hide Actions and View Document columns */
+          table tr th:nth-child(7),
+          table tr td:nth-child(7),
+          table tr th:nth-child(8),
+          table tr td:nth-child(8) {
+              display: none !important;
+          }
+          
+          body {
+              margin: 0;
+              padding: 20px;
+              background: white;
+          }
+          
+          table {
+              width: 100%;
+              border: 1px solid #000;
+          }
+          
+          th, td {
+              border: 1px solid #000;
+              padding: 8px;
+              color: black !important;
+          }
+      }
       </style>
   </head>
   <body>
