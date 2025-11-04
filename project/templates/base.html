@@ -137,8 +137,18 @@
         <!-- Logout floated to far right -->
         {% if current_user.is_authenticated %}
         <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
-          <li class="nav-item">
-            <a class="nav-link" href="{{url_for('logout')}}">Logout</a>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="profileDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <img src="{{ url_for('static', filename='profile_pics/' ~ current_user.picture ) }}" alt="Profile" style="height:36px;width:36px;border-radius:50%;">
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
+              <li>
+                <a class="dropdown-item" href="{{url_for('edit_profile')}}">Edit Profile</a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="{{url_for('logout')}}">Logout</a>
+              </li>
+            </ul>
           </li>
         </ul>
         {% endif %}

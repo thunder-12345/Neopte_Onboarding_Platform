@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+
+    <div id="Auth_Page">
+            <div id="Alignment">
+                <h3>Edit Profile</h3>
+                <div id="Inner_Content">
+                    <form method="POST" action="{{ url_for('edit_profile') }}" enctype="multipart/form-data">
+                        {# hidden_tag is a CSRF security feature. #}
+                        {{ form.hidden_tag() }}
+                        <div> {{ form.name.label }} {{ form.name() }} </div> 
+                        <div> {{ form.picture.label }} {{ form.picture() }} </div>
+                        <div>{{ form.submit() }}</div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+{% endblock %}

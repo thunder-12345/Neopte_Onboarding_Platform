@@ -18,15 +18,17 @@ class User(db.Model, UserMixin):
     name: Mapped[str] = mapped_column()
     email: Mapped[str] = mapped_column(unique=True)
     password_hash: Mapped[str] = mapped_column(db.String(128))
+    picture: Mapped[str] = mapped_column(default="default.jpeg")
     role: Mapped[str] = mapped_column(default="user")  # "user", "volunteer", " intern", "board"
 
     hours: Mapped[List["Hours"]] = relationship("Hours", back_populates="user", cascade="all, delete-orphan")
     documents: Mapped[List["Document"]] = relationship("Document", back_populates="user", cascade="all, delete-orphan")
 
-    def __init__(self, name, email, password, role="user"):
+    def __init__(self, name, email, password, picture, role="user"):
         self.name = name
         self.email = email
         self.password_hash = generate_password_hash(password, method = "pbkdf2:sha256")
+        self.picture = picture
         self.role = role
 
     def check_password(self, input_password):

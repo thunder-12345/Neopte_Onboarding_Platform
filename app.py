@@ -1,14 +1,16 @@
 # Imports
 from project import db, app
 from project.decorators import permission_required
-from flask import render_template, redirect, request, url_for, flash, send_from_directory, send_file
+from flask import render_template, redirect, request, url_for, flash, send_from_directory, send_file, current_app   
 from flask_login import login_user, login_required, logout_user, current_user
 from project.models import User, Document, Hours
-from project.forms import RegistrationForm, LoginForm, AddHoursForm
+from project.forms import RegistrationForm, LoginForm, AddHoursForm, EditProfile
 from distutils.log import debug
 from fileinput import filename
 import random
 import os
+from werkzeug.utils import secure_filename
+
 
 # Mapping user roles to their dashboard route names
 redirect_target = {
@@ -347,6 +349,32 @@ def view_pdf(doc_id):
 def pending_documents():
     users = User.query.all()  # Get all users
     return render_template('pending_documents.html', users= users)
+
+@login_required
+@app.route("/edit/profile", methods=["GET", "POST"])
+def edit_profile():
+    form = EditProfile()  # Create form to edit profile
+    if request.method == "POST":
+        if form.validate_on_submit():  # If form is valid
+            
+            if form.data['name']:
+                current_user.name=form.data['name']
+                
+            if form.picture.data:
+                file = form.picture.data
+                filename = secure_filename(file.filename)
+                file.save(os.path.join(current_app.root_path, 'static/profile_pics', filename))
+                current_user.picture = filename
+            
+            db.session.commit()
+            
+            return redirect(url_for('edit_profile'))
+        else:
+            flash("Error")
+            print("Form errors:", form.errors)
+
+    # Return template on GET or if form fails validation
+    return render_template("edit_profile.html", form = form)
     
 # Registration route (handles user registration)
 @app.route("/register", methods=["GET", "POST"])

@@ -2,7 +2,8 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, FloatField
 from wtforms.validators import DataRequired, Email, EqualTo, NumberRange
 from wtforms import ValidationError
-from wtforms.fields import DateField, DateTimeField 
+from wtforms.fields import DateField, FileField
+from flask_wtf.file import FileAllowed, FileRequired
 from wtforms_components import TimeField
 from project.models import User
 
@@ -22,6 +23,11 @@ class LoginForm(FlaskForm):
     email = StringField("Email: ", validators=[DataRequired(), Email()])
     password = PasswordField("Password: ", validators = [DataRequired()])
     submit = SubmitField("Login")
+
+class EditProfile(FlaskForm): 
+    name = StringField("Edit Name: ")
+    picture = FileField("Profile Picture: ", validators=[FileAllowed(['jpg', 'jpeg', 'png', 'gif'], 'Images only!')])
+    submit = SubmitField("Submit Changes")
 
 class AddHoursForm(FlaskForm):
     activity_name = StringField("Activity Name: ", validators=[DataRequired()])
