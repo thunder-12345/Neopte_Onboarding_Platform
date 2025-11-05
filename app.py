@@ -5,7 +5,6 @@ from flask import render_template, redirect, request, url_for, flash, send_from_
 from flask_login import login_user, login_required, logout_user, current_user
 from project.models import User, Document, Hours
 from project.forms import RegistrationForm, LoginForm, AddHoursForm, EditProfile
-from distutils.log import debug
 from fileinput import filename
 import random
 import os
