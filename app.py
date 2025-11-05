@@ -40,6 +40,7 @@ with app.app_context():
             name="Admin User",
             email="admin@example.com",
             password="admin123",   # password hashed in User model
+            picture="default.jpeg",
             role="board"
         )
         print(admin.role)
@@ -359,7 +360,7 @@ def edit_profile():
             
             if form.data['name']:
                 current_user.name=form.data['name']
-                
+
             if form.picture.data:
                 file = form.picture.data
                 filename = secure_filename(file.filename)
@@ -375,6 +376,27 @@ def edit_profile():
 
     # Return template on GET or if form fails validation
     return render_template("edit_profile.html", form = form)
+
+@login_required
+@permission_required('board')
+@app.route("/user/list")
+def user_list():
+    if request.args.get('filter_by') and request.args.get('search_query'):
+        filter_by = request.args.get('filter_by')
+        search_query = request.args.get('search_query')
+        
+        if filter_by == 'role':
+            # Filter by role
+            users = User.query.filter(User.role.ilike(f'%{search_query}%')).all()
+        elif filter_by == 'name':
+            # Filter by name
+            users = User.query.filter(User.name.ilike(f'%{search_query}%')).all()
+    else:
+        # No filter, show all users
+        users = User.query.all()    
+    
+    return render_template("user_list.html", users=users)
+
     
 # Registration route (handles user registration)
 @app.route("/register", methods=["GET", "POST"])

@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>User List</h1>
+
+{% if users|length == 0 %}
+    <div class="alert alert-warning" role="alert">
+        No applicable users based on filter.
+    </div>
+{% endif %}
+
+<form action="{{ url_for('user_list') }}" method="get" class="search-filter-container" style="display: flex; gap: 1rem; align-items: center;">
+    <div>
+        <select name="filter_by" id="filterSelect" class="filter-select" required>
+            <option disabled selected hidden>Filter By</option>
+            <option value="name">Name</option>
+            <option value="role">Role</option>
+        </select>
+    </div>
+    <div class="search-wrapper" style="position: relative;">
+        <input 
+            type="text" 
+            name="search_query"
+            id="searchBar" 
+            placeholder="Search..." 
+            class="search-input"
+            required
+        >
+        <button type="submit" class="search-btn" style="position: absolute; right: 0; top: 0; height: 100%; background: none; border: none;">
+            <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+        </button>
+    </div>
+</form>
+    
+
+    <table class="table table-hover">
+    <thead class = "thead-light">
+    <tr>
+        <th scope="col">#</th>
+        <th scope ="col">User Name</th>
+        <th scope="col">User ID</th>
+        <th scope="col">Role</th>
+        <th scope="col">Role Change</th>
+        <th scope="col">Delete User</th>  
+    </tr>
+    </thead>
+
+  
+    <tbody>
+        {% for user in users %}
+            {% set user_num = loop.index %}
+            <!-- 
+            if filter by name: 
+                if user.name starts with filter_name:
+            else if filter by role:
+                if user.role starts with filter_role:
+
+             -->
+            
+            <tr>
+            <th scope="row">{{user_num}}</th>
+            <td>{{ user.name }}</td>
+            <td>{{ user.id }}</td>
+            <td>{{ user.role }}</td>
+            <!-- Role Change column -->
+            
+            {% if user.role != current_user.role and user.role != "admin" %} 
+                <td>
+                <div class="btn-group" role="group">
+                    <button id="btnGroupDrop1" type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                        Change Role
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="btnGroupDrop1">
+                {% for role_choice in ['user', 'volunteer', 'intern', 'board'] %} 
+                {% if (user.role != role_choice) %}
+                    <form action="{{ url_for('upgrade_user') }}" method="post" style="display:inline;">
+                        <input type="hidden" name="user_id" value="{{ user.id }}">
+                        <input type="hidden" name="role_choice" value="{{ role_choice }}">
+                        <button type="submit" class="dropdown-item">
+                            Change role to {{ role_choice|capitalize }}
+                        </button>
+                    </form>
+                {% endif %}
+                
+                {% endfor %}
+                </td>
+                    </ul>
+                </div>
+                
+                <!-- Delete User column -->
+                <td>
+                    <form action="{{ url_for('delete_user') }}" method="post">
+                        <input type="hidden" name="user_id" value="{{ user.id }}">
+                        <input type="hidden" name="user_name" value="{{ user.name }}">
+                        <button type="submit" class="btn btn-danger">Delete {{ user.name }}</button>
+                    </form>
+                </td>
+                </tr>
+            {% else %}
+                <td>N/A</td>
+                <td>N/A</td>
+            {% endif %}
+        {% endfor %}
+        
+        
+    </tbody>
+    </table>
+      
+  
+    
+
+{% endblock %}

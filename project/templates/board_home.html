@@ -1,45 +1,19 @@
 {% extends "base.html" %}
 {% block content %}
+
 <div class="jumbotron">
   {% if current_user.is_authenticated %}
-    <p>Hi {{ current_user.name }}. You are a board member!</p>
+    <div class="alert alert-primary" role="alert">
+    Hi {{ current_user.name }}. You are a board member!
+    </div>
   {% else %}
     <p>Please login or register!</p>
   {% endif %}
+
+  <div class="image-container">
+    <img src="{{ url_for('static', filename = 'neopte logo.jpeg') }}" alt="Neopte" width="400" height="300">
+  </div>
 </div>
 
-<h1>User List</h1>
-  {% if user %}
-    <ol>
-      {% for user in user %}
-      <li>
-        {{ user.name }}
-        <span class="id">(ID: {{ user.id }})</span>
-        <span class="role">(Role: {{ user.role }})</span>
-        {% if user.role != "admin" and user.role != "board" %}
-          {% for role_choice in ['user', 'volunteer', 'intern'] %} 
-            
-              {% if (user.role != role_choice)%}
-                <form action="{{ url_for('upgrade_user') }}" method="post">
-                  <input type="hidden" name="user_id" value="{{ user.id }}">
-                  <input type="hidden" name="role_choice" value="{{ role_choice }}">
-                  <button type="submit" class="btn btn-success">Change role to {{ role_choice|capitalize }}</button>
-                </form>
-              {% endif %}
-          {% endfor %}
-              
-          <form action="{{ url_for('delete_user') }}" method="post">
-            <input type="hidden" name="user_id" value="{{ user.id }}">
-            <input type="hidden" name="user_name" value="{{ user.name }}">
-            <button type="submit" class="btn btn-danger">Delete {{ user.name }}</button>
-          </form>
-          <br>
-        {% endif %}
-      </li>
-      {% endfor %}
-  {% else %}
-      <li class="empty">No users added yet.</li>
-  {% endif %}
-    </ul>
 
 {% endblock %}

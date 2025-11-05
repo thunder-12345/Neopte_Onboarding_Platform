@@ -123,6 +123,88 @@
               color: black !important;
           }
       }
+
+      /* search bar / filter css */
+
+      .search-filter-container {
+          display: flex;
+          gap: 12px;
+          margin-bottom: 1.5rem;
+          align-items: center;
+      }
+
+      .dropdown {
+          position: relative;
+          display: inline-block;
+      }
+
+      .filter-select {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 10px 40px 10px 16px;
+          background-color: #3b82f6;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 14px;
+          font-weight: 500;
+          white-space: nowrap;
+          appearance: none;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='white'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+          background-repeat: no-repeat;
+          background-position: right 12px center;
+          background-size: 16px;
+          transition: background-color 0.2s;
+      }
+
+      .filter-select:hover {
+          background-color: #2563eb;
+      }
+
+      .filter-select:focus {
+          outline: none;
+          background-color: #2563eb;
+      }
+
+      .filter-select option {
+          background-color: white;
+          color: #374151;
+          padding: 10px;
+      }
+
+      .search-wrapper {
+          flex: 1;
+          position: relative;
+          min-width: 0;
+      }
+
+      .search-input {
+          width: 100%;
+          padding: 10px 40px 10px 16px;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          font-size: 14px;
+          outline: none;
+          transition: border-color 0.2s, box-shadow 0.2s;
+      }
+
+      .search-input:focus {
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      }
+
+      .search-icon {
+          position: absolute;
+          right: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 20px;
+          height: 20px;
+          color: #9ca3af;
+          pointer-events: none;
+      }
       </style>
   </head>
   <body>
@@ -148,14 +230,21 @@
         <!-- Links immediately next to Home -->
         <ul class="navbar-nav mb-2 mb-lg-0 d-flex flex-row">
           {% if current_user.is_authenticated %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('document_status') }}">Document Status</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" 
-            href="{{ url_for('hours_log') }}">
-                View Hours Log </a>
-          </li>
+            {% if current_user.role == 'admin' or current_user.role == 'board' %}
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('user_list') }}">User List</a>
+              </li>
+              {% endif %}
+
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('document_status') }}">Document Status</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" 
+              href="{{ url_for('hours_log') }}">
+                  View Hours Log </a>
+            </li>
+            
           
           {% else %}
           <li class="nav-item">
