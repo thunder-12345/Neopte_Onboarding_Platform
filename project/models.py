@@ -18,6 +18,7 @@ class User(db.Model, UserMixin):
     name: Mapped[str] = mapped_column()
     email: Mapped[str] = mapped_column(unique=True)
     password_hash: Mapped[str] = mapped_column(db.String(128))
+    date_created: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     picture: Mapped[str] = mapped_column(default="default.jpeg")
     role: Mapped[str] = mapped_column(default="user")  # "user", "volunteer", " intern", "board"
 
@@ -28,6 +29,7 @@ class User(db.Model, UserMixin):
         self.name = name
         self.email = email
         self.password_hash = generate_password_hash(password, method = "pbkdf2:sha256")
+        self.date_created = func.now()
         self.picture = picture
         self.role = role
 
