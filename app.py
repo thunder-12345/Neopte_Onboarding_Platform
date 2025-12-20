@@ -9,6 +9,12 @@ from fileinput import filename
 import random
 import os
 from werkzeug.utils import secure_filename
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import inch
+from reportlab.lib import colors
+import io
+from datetime import datetime
 
 
 # Mapping user roles to their dashboard route names
@@ -227,8 +233,17 @@ def update_hours_log_status():
     new_status = request.form.get("new_status", type=str)  
     log = Hours.query.get(log_id)
     if log:
+
+        if new_status == "Approved":
+            user = User.query.get(log.user_id)
+            user.total_hours += log.amount
+        elif log.status == "Approved" and new_status in ["Denied", "Pending"]:
+            user = User.query.get(log.user_id)
+            user.total_hours -= log.amount
+
         log.status = new_status
         db.session.commit()
+
     return redirect(request.referrer or url_for('specific_log_hours', user_id=log.user_id))
 
 @app.route('/pending/hours', methods=['GET'])
@@ -449,6 +464,248 @@ def logout():
     logout_user()  # Log out user
     # flash("You have successfully logged out!")
     return redirect(url_for("user_dashboard"))
+
+
+@login_required
+@permission_required('volunteer')
+def generate_volunteer_certificate(user):
+    """
+    Generate a professional volunteer certificate PDF.
+    
+    What this does:
+    1. Creates a PDF in memory (BytesIO buffer)
+    2. Draws a professional certificate with borders
+    3. Fills in the volunteer's name, start date, and total hours
+    4. Returns the PDF buffer ready to send
+    
+    Args:
+        user: A User object from your database
+    
+    Returns:
+        BytesIO buffer containing the PDF data
+    """
+
+    # Create PDF in memory (not on disk!)
+    buffer = io.BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=letter)
+    width, height = letter  # 612 x 792 points (8.5" x 11")
+    
+    # ---------------------------
+    # OUTER BORDER
+    # ---------------------------
+    pdf.setStrokeColor(colors.HexColor('#2C3E50'))  # Dark blue-gray
+    pdf.setLineWidth(3)
+    pdf.rect(0.5 * inch, 0.5 * inch, width - 1*inch, height - 1*inch)
+    
+    # Inner decorative border
+    pdf.setLineWidth(1)
+    pdf.rect(0.6 * inch, 0.6 * inch, width - 1.2*inch, height - 1.2*inch)
+    
+    # ---------------------------
+    # HEADER SECTION WITH LOGO
+    # ---------------------------
+    y_pos = height - 1 * inch
+    
+    # Add logo image at the top - stretched nearly border to border
+    logo_path = os.path.join(app.root_path, 'static', 'neopte logo.jpeg')
+    if os.path.exists(logo_path):
+        # Logo dimensions - stretched almost to borders
+        logo_width = width - 1.4 * inch  # Stops just before the inner border
+        logo_height = 1.5 * inch  # Adjust height as needed
+        logo_x = 0.7 * inch  # Start just after the inner border
+        
+        pdf.drawImage(logo_path, logo_x, y_pos - logo_height, 
+                     width=logo_width, height=logo_height, 
+                     preserveAspectRatio=True, mask='auto')
+        
+        y_pos -= logo_height + 0.5 * inch
+    else:
+        # Fallback to text if logo not found
+        pdf.setFont("Helvetica-Bold", 28)
+        pdf.setFillColor(colors.HexColor('#2C3E50'))
+        title = "Neopte Foundation"
+        title_width = pdf.stringWidth(title, "Helvetica-Bold", 28)
+        pdf.drawString((width - title_width) / 2, y_pos, title)
+        y_pos -= 0.8 * inch
+    
+    # ---------------------------
+    # MAIN CONTENT - THE VOLUNTEER INFO
+    # ---------------------------
+    pdf.setFont("Helvetica", 14)
+    pdf.setFillColor(colors.black)
+    
+    # "This certifies that"
+    intro = "This certifies that"
+    intro_width = pdf.stringWidth(intro, "Helvetica", 14)
+    pdf.drawString((width - intro_width) / 2, y_pos, intro)
+    
+    y_pos -= 0.7 * inch
+    
+    # VOLUNTEER NAME - The star of the show!
+    pdf.setFont("Helvetica-Bold", 24)
+    pdf.setFillColor(colors.HexColor('#3498DB'))  # Blue
+    name_width = pdf.stringWidth(user.name, "Helvetica-Bold", 24)
+    pdf.drawString((width - name_width) / 2, y_pos, user.name)
+    
+    # Underline the name for emphasis
+    pdf.setStrokeColor(colors.HexColor('#3498DB'))
+    pdf.setLineWidth(1)
+    pdf.line((width - name_width) / 2 - 10, y_pos - 5, 
+             (width + name_width) / 2 + 10, y_pos - 5)
+    
+    y_pos -= 0.8 * inch
+    
+    # Service description with start date
+    pdf.setFont("Helvetica", 14)
+    pdf.setFillColor(colors.black)
+    
+    # Format the start date
+    
+    if user.date_created:
+        start_date = user.date_created.strftime('%B %d, %Y')
+        service_text = f"has been serving with the Neopte Foundation since {start_date}"
+    else:
+        service_text = "has been serving with the Neopte Foundation"
+    
+    service_width = pdf.stringWidth(service_text, "Helvetica", 14)
+    pdf.drawString((width - service_width) / 2, y_pos, service_text)
+    
+    y_pos -= 0.8 * inch
+    
+    # Hours intro
+    hours_intro = "contributing a total of"
+    hours_intro_width = pdf.stringWidth(hours_intro, "Helvetica", 14)
+    pdf.drawString((width - hours_intro_width) / 2, y_pos, hours_intro)
+    
+    y_pos -= 0.6 * inch
+    
+    # TOTAL HOURS - Big and bold!
+    pdf.setFont("Helvetica-Bold", 22)
+    pdf.setFillColor(colors.HexColor('#E74C3C'))  # Red for emphasis
+    hours_text = f"{user.total_hours:.1f} volunteer hours"
+    hours_width = pdf.stringWidth(hours_text, "Helvetica-Bold", 22)
+    pdf.drawString((width - hours_width) / 2, y_pos, hours_text)
+    
+    y_pos -= 1.5 * inch
+    
+    # ---------------------------
+    # FOOTER - Gratitude message
+    # ---------------------------
+    pdf.setFont("Helvetica-Oblique", 11)
+    pdf.setFillColor(colors.HexColor('#7F8C8D'))
+    gratitude = "We deeply appreciate your dedication and service to our community."
+    gratitude_width = pdf.stringWidth(gratitude, "Helvetica-Oblique", 11)
+    pdf.drawString((width - gratitude_width) / 2, y_pos, gratitude)
+    
+    y_pos -= 1 * inch
+    
+    # Signature line
+    pdf.setStrokeColor(colors.black)
+    pdf.setLineWidth(1)
+    sig_start = width / 2 - 2 * inch
+    pdf.line(sig_start, y_pos, sig_start + 4*inch, y_pos)
+    
+    y_pos -= 0.3 * inch
+    
+    # Signature label
+    pdf.setFont("Helvetica", 10)
+    pdf.setFillColor(colors.black)
+    sig_label = "Executive Director, Neopte Foundation"
+    sig_width = pdf.stringWidth(sig_label, "Helvetica", 10)
+    pdf.drawString((width - sig_width) / 2, y_pos, sig_label)
+    
+    # ---------------------------
+    # METADATA - Bottom of page
+    # ---------------------------
+    pdf.setFont("Helvetica", 8)
+    pdf.setFillColor(colors.HexColor('#BDC3C7'))  # Light gray
+    
+    # Certificate ID (bottom right)
+    cert_id = f"Certificate ID: NF-{user.id:05d}"
+    pdf.drawString(width - 2.5*inch, 0.7*inch, cert_id)
+    
+    # Issue date (bottom left)
+    issue_date = datetime.now().strftime('%B %d, %Y')
+    pdf.drawString(0.7*inch, 0.7*inch, f"Issued: {issue_date}")
+    
+    # Finalize the PDF
+    pdf.showPage()
+    pdf.save()
+    
+    # Reset buffer to beginning so it can be read
+    buffer.seek(0)
+    return buffer
+
+@app.route('/certificate/view')
+@login_required
+@permission_required('volunteer')
+def view_certificate():
+    """
+    View certificate in browser.
+    
+    How this works:
+    - Volunteers/interns see their own certificate
+    - Board/admin can view any user's certificate by passing ?user_id=X
+    
+    Example URLs:
+    - /certificate/view (volunteer sees their own)
+    - /certificate/view?user_id=5 (board views user #5's certificate)
+    """
+    # Determine which user's certificate to show
+    if current_user.role in ['board', 'admin']:
+        # Board/admin can specify a user_id
+        user_id = request.args.get('user_id', type=int)
+        if user_id:
+            user = User.query.get_or_404(user_id)
+        else:
+            flash("No user specified.")
+            return redirect(url_for(redirect_target.get(current_user.role)))
+    else:
+        # Volunteers/interns only see their own
+        user = current_user
+    
+    # Generate the PDF
+    pdf_buffer = generate_volunteer_certificate(user)
+    
+    # Send it to the browser (opens in new tab)
+    return send_file(
+        pdf_buffer,
+        mimetype='application/pdf',
+        as_attachment=False,  # False = open in browser
+        download_name=f'neopte_certificate_{user.name.replace(" ", "_")}.pdf'
+    )
+
+@app.route('/certificate/download')
+@login_required
+@permission_required('volunteer')
+def download_certificate():
+    """
+    Download certificate to computer.
+    
+    This is identical to view_certificate() except as_attachment=True
+    which tells the browser to download instead of display.
+    """
+    # Same user determination logic
+    if current_user.role in ['board', 'admin']:
+        user_id = request.args.get('user_id', type=int)
+        if user_id:
+            user = User.query.get_or_404(user_id)
+        else:
+            flash("No user specified.")
+            return redirect(url_for(redirect_target.get(current_user.role)))
+    else:
+        user = current_user
+    
+    # Generate the PDF
+    pdf_buffer = generate_volunteer_certificate(user)
+    
+    # Send it as a download
+    return send_file(
+        pdf_buffer,
+        mimetype='application/pdf',
+        as_attachment=True,  # True = force download
+        download_name=f'neopte_volunteer_certificate_{user.name.replace(" ", "_")}.pdf'
+    )
 
 # Run the app if this file is executed directly
 if __name__ == "__main__": 

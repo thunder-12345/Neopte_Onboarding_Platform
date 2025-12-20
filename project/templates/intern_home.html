@@ -1,18 +1,80 @@
 {% extends "base.html" %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/volunteerhome.css') }}">
+{% endblock %}
+
 {% block content %}
-<div class="jumbotron">
-  {% if current_user.is_authenticated %}
-    <div class="alert alert-primary" role="alert">
-      Hi {{ current_user.name }}! You are an intern!
-    </div>
-  {% endif %}  
 
-  <div class="image-container">
-    <img src="{{ url_for('static', filename = 'neopte logo.jpeg') }}" alt="Neopte" width="400" height="300">
-  </div>
+<div class="volunteer-dashboard">
   
+  <!-- Welcome Header -->
+  {% if current_user.is_authenticated %}
+  <div class="welcome-banner">
+    <div class="welcome-content">
+      <h1>Welcome back, {{ current_user.name }}! 👋</h1>
+      <p>Thank you for your dedication as an intern!</p>
+    </div>
+    <div class="logo-badge">
+      <img src="{{ url_for('static', filename = 'neopte logo.jpeg') }}" alt="Neopte">
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Stats Cards -->
+  <div class="stats-section">
+    <div class="stat-card">
+      <div class="stat-icon hours">⏱️</div>
+      <div class="stat-info">
+        <p class="stat-label">Total Hours</p>
+        <p class="stat-value">{{ current_user.total_hours }}</p>
+      </div>
+    </div>
+    
+    {% set hours_count = current_user.hours|length %}
+    <div class="stat-card">
+      <div class="stat-icon activities">📋</div>
+      <div class="stat-info">
+        <p class="stat-label">Activities Logged</p>
+        <p class="stat-value">{{ hours_count }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Certificate Section -->
+  <div class="certificate-section">
+    <div class="section-header">
+      <div class="header-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+        </svg>
+      </div>
+      <div>
+        <h2>Your Volunteer Certificate</h2>
+        <p>Download your official certificate of intern service</p>
+      </div>
+    </div>
+    
+    <div class="certificate-actions">
+      <a href="{{ url_for('view_certificate') }}" target="_blank" class="action-btn btn-view">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+        View Certificate
+      </a>
+      <a href="{{ url_for('download_certificate') }}" class="action-btn btn-download">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        Download PDF
+      </a>
+    </div>
+  </div>
+
 </div>
-
-
 
 {% endblock %}

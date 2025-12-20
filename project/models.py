@@ -19,6 +19,7 @@ class User(db.Model, UserMixin):
     email: Mapped[str] = mapped_column(unique=True)
     password_hash: Mapped[str] = mapped_column(db.String(128))
     date_created: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    total_hours: Mapped[float] = mapped_column(default=0.0)
     picture: Mapped[str] = mapped_column(default="default.jpeg")
     role: Mapped[str] = mapped_column(default="user")  # "user", "volunteer", " intern", "board"
 
@@ -65,6 +66,9 @@ class Hours(db.Model):
         self.description = description
         self.user = user
         self.status = status
+
+    def __repr__(self):     
+        return f"Activity: {self.activity_name} on {self.date} for {self.amount} hours. Status: {self.status}"
 
 
 class Document(db.Model):

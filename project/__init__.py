@@ -6,7 +6,7 @@ from flask_migrate import Migrate
 from flask_login import LoginManager
 
 # Initialize the Flask application
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', template_folder='templates')
 
 # Set up configuration for SQLAlchemy and secret key
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///project.db"
