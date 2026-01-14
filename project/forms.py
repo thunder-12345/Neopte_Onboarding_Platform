@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, FloatField
-from wtforms.validators import DataRequired, Email, EqualTo, NumberRange
+from wtforms.validators import DataRequired, Email, EqualTo, NumberRange, Optional
 from wtforms import ValidationError
 from wtforms.fields import DateField, FileField
 from flask_wtf.file import FileAllowed, FileRequired
@@ -26,7 +26,9 @@ class LoginForm(FlaskForm):
 
 class EditProfile(FlaskForm): 
     name = StringField("Edit Name: ")
-    picture = FileField("Profile Picture: ", validators=[FileAllowed(['jpg', 'jpeg', 'png', 'gif'], 'Images only!')])
+    email = StringField("Edit Email: ", validators=[Optional(), Email()])
+    address = StringField("Edit Address: ")
+    picture = FileField("Profile Picture: ", validators=[Optional(), FileAllowed(['jpg', 'jpeg', 'png', 'gif'], 'Images only!')])
     submit = SubmitField("Submit Changes")
 
 class AddHoursForm(FlaskForm):

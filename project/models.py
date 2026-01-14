@@ -17,6 +17,7 @@ class User(db.Model, UserMixin):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column()
     email: Mapped[str] = mapped_column(unique=True)
+    address: Mapped[str] = mapped_column(default="None Provided")
     password_hash: Mapped[str] = mapped_column(db.String(128))
     date_created: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     total_hours: Mapped[float] = mapped_column(default=0.0)

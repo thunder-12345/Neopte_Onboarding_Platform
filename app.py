@@ -375,6 +375,12 @@ def edit_profile():
             if form.data['name']:
                 current_user.name=form.data['name']
 
+            if form.data['email']:
+                current_user.email=form.data['email']
+
+            if form.data['address']:
+                current_user.address=form.address.data
+
             if form.picture.data:
                 file = form.picture.data
                 filename = secure_filename(file.filename)

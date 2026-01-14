@@ -17,6 +17,8 @@
                         {# hidden_tag is a CSRF security feature. #}
                         {{ form.hidden_tag() }}
                         <div> {{ form.name.label }} {{ form.name(placeholder=current_user.name) }} </div> 
+                        <div> {{ form.email.label }} {{ form.email(placeholder=current_user.email) }} </div> 
+                        <div> {{ form.address.label }} {{ form.address(placeholder=current_user.address) }} </div>
                         <div> {{ form.picture.label }} {{ form.picture() }} </div>
                         <div>{{ form.submit() }}</div>
                     </form>
