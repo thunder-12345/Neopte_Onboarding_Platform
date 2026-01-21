@@ -14,6 +14,10 @@ class RegistrationForm(FlaskForm):
     confirm_pass = PasswordField("Confirm Password: ", validators = [DataRequired(), EqualTo("password", message = "The passwords must match.")])
     submit = SubmitField("Register")
 
+    def validate_name(self, field):
+        if any(char.isdigit() for char in field.data):
+            raise ValidationError("Name cannot contain numbers.")
+        
     #check if email is unique 
     def validate_email(self, email):
         if User.query.filter_by(email = self.email.data).first():
