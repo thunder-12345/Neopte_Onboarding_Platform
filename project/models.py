@@ -2,7 +2,7 @@ from project import db, login_manager
 from werkzeug.security import generate_password_hash,check_password_hash
 from flask_login import UserMixin
 from typing import List
-from sqlalchemy import Date, DateTime, func, text
+from sqlalchemy import Date, DateTime, func, text, JSON
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from datetime import date, datetime
 
@@ -91,9 +91,35 @@ class Document(db.Model):
         self.description = description
         self.status = status 
 
+class ActivityLog(db.Model):
+    __tablename__ = "activity_logs"
 
+    id: Mapped[int] = mapped_column(primary_key=True)
 
+    # WHO caused the action
+    actor_id: Mapped[int] = mapped_column(db.ForeignKey("users.id"))
+    actor = relationship("User")
 
+    # WHAT happened
+    action: Mapped[str] = mapped_column()
+
+    # WHAT was affected (generic target)
+    target_type: Mapped[str] = mapped_column()
+    target_id: Mapped[int] = mapped_column()
+
+    # WHEN it happened
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now()
+    )
+
+    # OPTIONAL structured context
+    details: Mapped[dict] = mapped_column(JSON, nullable=True)
+
+    def __repr__(self):
+        return (
+            f"<ActivityLog {self.action} "
+            f"on {self.target_type}:{self.target_id}>"
+        )
 
 
 

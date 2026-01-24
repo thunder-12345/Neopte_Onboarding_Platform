@@ -239,6 +239,11 @@
               <li class="nav-item">
                 <a class="nav-link" href="{{ url_for('user_list') }}">User List</a>
               </li>
+              <li class="nav-item">
+              <a class="nav-link" 
+              href="{{ url_for('notification') }}">
+                  Notifications / Updates </a>
+              </li>
               {% endif %}
 
             <li class="nav-item">
@@ -249,6 +254,7 @@
               href="{{ url_for('hours_log') }}">
                   View Hours Log </a>
             </li>
+            
             
           
           {% else %}

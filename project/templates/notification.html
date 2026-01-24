@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Activity Notifications</h2>
+
+    {% if logs %}
+        <div class="list-group">
+
+            {% for log in logs %}
+            <div class="list-group-item list-group-item-action flex-column align-items-start mb-2">
+                <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">{{ log.action.replace('_', ' ') | capitalize }}</h5>
+                    <small class="text-muted">{{ log.created_at.strftime('%b %d, %Y %I:%M %p') }}</small>
+                </div>
+                
+                <p class="mb-1">
+                    <strong>Actor:</strong> {{ log.actor.name }} ({{ log.actor.email }})<br>
+                    <strong>Target:</strong> {{ log.target_type }} (ID: {{ log.target_id }})<br>
+                </p>
+
+                {% if log.details %}
+                <ul class="mb-1">
+                    {% for key, value in log.details.items() %}
+                    <li><strong>{{ key | replace('_', ' ') | capitalize }}:</strong> {{ value }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+        </div>
+    {% else %}
+        <p class="text-muted">No activity notifications to display.</p>
+    {% endif %}
+</div>
+{% endblock %}

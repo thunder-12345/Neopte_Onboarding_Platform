@@ -3,8 +3,10 @@ from project import db, app
 from project.decorators import permission_required
 from flask import render_template, redirect, request, url_for, flash, send_from_directory, send_file, current_app   
 from flask_login import login_user, login_required, logout_user, current_user
-from project.models import User, Document, Hours
+from project.models import User, Document, Hours, ActivityLog
 from project.forms import RegistrationForm, LoginForm, AddHoursForm, EditProfile
+from project.activity import log_event
+
 from fileinput import filename
 import random
 import os
@@ -73,7 +75,8 @@ with app.app_context():
                 name=u["name"],
                 email=u["email"],
                 password=u["password"],
-                role=u["role"]
+                role=u["role"], 
+                picture="default.jpeg",
             )
             db.session.add(user)
             print(f"Adding {u['name']} ({u['role']})")
@@ -98,8 +101,21 @@ def upgrade_user():
         flash("User not found!")
         return redirect(url_for(redirect_target.get(current_user.role, "user_dashboard")))
     
-    user.role = role_choice  # Update user role
+    old_role = user.role
+    user.role = role_choice # Update user role
+
+    log_event(
+        actor=current_user,
+        action="user_role_changed",
+        target_type="User",
+        target_id=user.id,
+        details={
+            "old_role": old_role,
+            "new_role": role_choice
+        }
+    )
     db.session.commit()
+
     flash(f"User {user.name} has been changed to {user.role} .")
     return redirect(url_for(redirect_target.get(current_user.role, "board_dashboard")))
 
@@ -121,6 +137,17 @@ def delete_user():
         flash("User not found!")
         return redirect(url_for(redirect_target.get(current_user.role, "user_dashboard")))
     
+    log_event(
+        actor=current_user,
+        action="user_deleted",
+        target_type="User",
+        target_id=user.id,
+        details={
+            "email": user.email,
+            "role": user.role
+        }
+    )
+
     db.session.delete(user)  # Delete user from database
     db.session.commit()
     flash(f"User {user_name} has been deleted.")
@@ -212,6 +239,18 @@ def hours_log():
                 )
                 db.session.add(log)
                 db.session.commit()
+                log_event(
+                    actor=current_user,
+                    action="hours_created",
+                    target_type="Hours",
+                    target_id=log.id, #must commit previously to get id
+                    details={
+                        "activity_name": log.activity_name,
+                        "amount": log.amount,
+                        "date": str(log.date)
+                    }
+                )
+                db.session.commit()
                 flash("You have logged your hours!")
                 return redirect(url_for('specific_log_hours'))
             else:
@@ -232,14 +271,43 @@ def update_hours_log_status():
     log_id = request.form.get("log_id", type=int)  
     new_status = request.form.get("new_status", type=str)  
     log = Hours.query.get(log_id)
+    old_status = log.status
     if log:
 
         if new_status == "Approved":
             user = User.query.get(log.user_id)
             user.total_hours += log.amount
+            
+            log_event(
+                actor=current_user,
+                action="hours_status_changed",
+                target_type="Hours",
+                target_id=log.id,
+                details={
+                    "old_status": old_status,
+                    "new_status": new_status,
+                    "amount": log.amount,
+                    "user_id": log.user_id
+                }
+            )
+
         elif log.status == "Approved" and new_status in ["Denied", "Pending"]:
             user = User.query.get(log.user_id)
             user.total_hours -= log.amount
+
+
+            log_event(
+                actor=current_user,
+                action="hours_status_changed",
+                target_type="Hours",
+                target_id=log.id,
+                details={
+                    "old_status": old_status,
+                    "new_status": new_status,
+                    "amount": log.amount,
+                    "user_id": log.user_id
+                }
+            )
 
         log.status = new_status
         db.session.commit()
@@ -285,6 +353,18 @@ def document_status():
                 )
                 db.session.add(document)
                 db.session.commit()
+
+                log_event(
+                    actor=current_user,
+                    action="document_uploaded",
+                    target_type="Document",
+                    target_id=document.id,
+                    details={
+                        "filename": document.filename,
+                        "doctype": document.doctype
+                    }
+                )
+                db.session.commit()
                                     
         return render_template("document_status_list.html", 
                                names=saved_files, 
@@ -306,7 +386,18 @@ def update_document_status():
     doc_id = request.form.get("doc_id", type=int)  
     new_status = request.form.get("new_status", type=str)  
     document = Document.query.get(doc_id)
+    old_status = document.status
     if document:
+        log_event(
+            actor=current_user,
+            action="document_status_changed",
+            target_type="Document",
+            target_id=document.id,
+            details={
+                "old_status": old_status,
+                "new_status": new_status
+            }
+        )
         document.status = new_status
         db.session.commit()
     return redirect(request.referrer or url_for('document_status'))
@@ -365,29 +456,57 @@ def pending_documents():
     users = User.query.all()  # Get all users
     return render_template('pending_documents.html', users= users)
 
+@app.route("/notification")
+@login_required
+@permission_required('board')
+def notification():
+    logs = (
+        ActivityLog.query
+        .order_by(ActivityLog.created_at.desc())
+        .limit(100)
+        .all()
+    )
+    return render_template("notification.html", logs=logs)
+
 @login_required
 @app.route("/edit/profile", methods=["GET", "POST"])
 def edit_profile():
     form = EditProfile()  # Create form to edit profile
+
     if request.method == "POST":
+
+        changed_fields = {}
+
         if form.validate_on_submit():  # If form is valid
             
-            if form.data['name']:
-                current_user.name=form.data['name']
+            if form.data['name'] and form.data['name'] != current_user.name:
+                changed_fields['name'] = form.data['name']
+                current_user.name = form.data['name']
 
-            if form.data['email']:
+            if form.data['email'] and form.data['email'] != current_user.email:
+                changed_fields['email'] = form.data['email']
                 current_user.email=form.data['email']
 
-            if form.data['address']:
-                current_user.address=form.address.data
+            if form.data['address'] and form.data['address'] != current_user.address:
+                changed_fields['address'] = form.data['address']
+                current_user.address=form.data['address']
 
             if form.picture.data:
                 file = form.picture.data
                 filename = secure_filename(file.filename)
                 file.save(os.path.join(current_app.root_path, 'static/profile_pics', filename))
                 current_user.picture = filename
-            
-            db.session.commit()
+                changed_fields['picture'] = filename
+
+            if changed_fields:  # Only log if something actually changed
+                log_event(
+                    actor=current_user,
+                    action="profile_updated",
+                    target_type="User",
+                    target_id=current_user.id,
+                    details=changed_fields
+                )
+                db.session.commit()
             
             return redirect(url_for('edit_profile'))
         else:
