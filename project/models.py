@@ -121,9 +121,59 @@ class ActivityLog(db.Model):
             f"on {self.target_type}:{self.target_id}>"
         )
 
+class Task(db.Model):
+    __tablename__ = 'tasks'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    classification: Mapped[str] = mapped_column()  # "project" or "reminder"
+    title: Mapped[str] = mapped_column()
+    description: Mapped[str] = mapped_column()
+    assigned_role: Mapped[str] = mapped_column(nullable=True)  # e.g., "intern" for reminders
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    # Relationship to TaskAssignment
+    assignments: Mapped[List["TaskAssignment"]] = relationship(
+        "TaskAssignment", back_populates="task", cascade="all, delete-orphan"
+    )
+
+    def __init__(self, classification, title, description, assigned_role=None):
+        self.classification = classification
+        self.title = title
+        self.description = description
+        self.assigned_role = assigned_role
+        self.created_at = func.now()
+
+    def __repr__(self):
+        return f"Task: {self.title} ({self.classification})"
 
 
-    
+class TaskAssignment(db.Model):
+    __tablename__ = 'task_assignments'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    task_id: Mapped[int] = mapped_column(db.ForeignKey('tasks.id'), name="fk_taskassign_task_id")
+    user_id: Mapped[int] = mapped_column(db.ForeignKey('users.id'), name="fk_taskassign_user_id")
+
+    status: Mapped[str] = mapped_column(default="pending")  # "pending" or "done"
+    upload: Mapped[str] = mapped_column(nullable=True)
+    score: Mapped[float] = mapped_column(nullable=True)
+    comments: Mapped[str] = mapped_column(default="")
+
+    # Relationships
+    task: Mapped["Task"] = relationship("Task", back_populates="assignments")
+    user: Mapped["User"] = relationship("User")
+
+    def __init__(self, task, user, status="pending", upload=None, score=None, comments=""):
+        self.task = task
+        self.user = user
+        self.status = status
+        self.upload = upload
+        self.score = score
+        self.comments = comments
+
+    def __repr__(self):
+        return f"TaskAssignment: {self.task.title} -> {self.user.name} ({self.status})"
+
 
 
 
