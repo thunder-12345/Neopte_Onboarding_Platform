@@ -832,6 +832,12 @@ def download_certificate():
         download_name=f'neopte_volunteer_certificate_{user.name.replace(" ", "_")}.pdf'
     )
 
+@app.route("/policies")
+@login_required
+@permission_required('volunteer')
+def policies():
+    return render_template("policies.html")
+
 # Run the app if this file is executed directly
 if __name__ == "__main__": 
     app.run(port=5000, debug = True)
