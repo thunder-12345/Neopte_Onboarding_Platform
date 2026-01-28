@@ -242,14 +242,26 @@
               <li class="nav-item">
               <a class="nav-link" 
               href="{{ url_for('notification') }}">
-                  Notifications / Updates </a>
+                  Updates </a>
               </li>
-              <li class="nav-item">
-              <a class="nav-link" 
-              href="{{ url_for('create_task') }}">
-                  Create Task </a>
-              </li>
-              {% endif %}
+                <li class="nav-item dropdown">
+                  <a class="nav-link dropdown-toggle" href="#" id="taskDropdown" role="button" aria-expanded="false">
+                    Task Management
+                  </a>
+                  <ul class="dropdown-menu" aria-labelledby="taskDropdown">
+                    <li>
+                      <a class="dropdown-item" href="{{ url_for('create_task') }}">Create Task</a>
+                    </li>
+                  </ul>
+                </li>
+
+                <style>
+                  .nav-item.dropdown:hover .dropdown-menu {
+                    display: block;
+                  }
+                </style>
+
+                {% endif %}
 
             <li class="nav-item">
               <a class="nav-link" href="{{ url_for('document_status') }}">Document Status</a>
@@ -281,19 +293,24 @@
         {% if current_user.is_authenticated %}
         <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
           <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="profileDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <a class="nav-link d-flex align-items-center dropdown-toggle" href="#" id="profileDropdown" role="button" aria-expanded="false">
               <img src="{{ url_for('static', filename='profile_pics/' ~ current_user.picture ) }}" alt="Profile" style="height:36px;width:36px;border-radius:50%;">
             </a>
-            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown" style="min-width: 160px; right: 0; left: auto;">
               <li>
-                <a class="dropdown-item" href="{{url_for('edit_profile')}}">Profile</a>
+          <a class="dropdown-item" href="{{url_for('edit_profile')}}">Profile</a>
               </li>
               <li>
-                <a class="dropdown-item" href="{{url_for('logout')}}">Logout</a>
+          <a class="dropdown-item" href="{{url_for('logout')}}">Logout</a>
               </li>
             </ul>
           </li>
         </ul>
+        <style>
+          .nav-item.dropdown:hover .dropdown-menu {
+            display: block;
+          }
+        </style>
         {% endif %}
 
       </div>

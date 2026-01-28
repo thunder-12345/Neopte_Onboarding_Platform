@@ -921,8 +921,7 @@ def create_task():
                         task=task,
                         user=user,
                         due_date=due_date,
-                        upload=upload_required,
-                        status="Assigned"
+                        upload=upload_required
                     )
                     db.session.add(assignment)
             
@@ -945,8 +944,7 @@ def create_task():
                         task=task,
                         user=user,
                         due_date=due_date,
-                        upload=upload_required,
-                        status="Assigned"
+                        upload=upload_required
                     )
                     db.session.add(assignment)
             

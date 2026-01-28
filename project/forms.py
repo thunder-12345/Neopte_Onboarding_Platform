@@ -6,6 +6,7 @@ from wtforms.fields import DateField, FileField, TextAreaField, SelectField, Sel
 from flask_wtf.file import FileAllowed, FileRequired
 from wtforms_components import TimeField
 from project.models import User
+from datetime import date
 
 class RegistrationForm(FlaskForm): 
     name = StringField("Name: ", validators=[DataRequired()])
@@ -93,10 +94,14 @@ class CreateTasksForm(FlaskForm):
 class CreateTaskAssignmentForm(FlaskForm):
     """Form for assigning a task to users (Step 2)"""
     
+    def not_in_past(form, field):
+        if field.data < date.today():
+            raise ValidationError("Due date cannot be in the past.")
+        
     due_date = DateField(
         'Due Date', 
-        validators=[DataRequired(message="Please select a due date")],
-        format='%Y-%m-%d'
+        validators=[DataRequired(message="Please select a due date"),
+                    not_in_past]
     )
     
     upload_required = BooleanField(
