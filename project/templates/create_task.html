@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">
+                        {% if step == 1 %}
+                            Create New Task - Step 1 of 2
+                        {% else %}
+                            Create New Task - Step 2 of 2
+                        {% endif %}
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <!-- Progress Indicator -->
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="{% if step == 1 %}fw-bold text-primary{% endif %}">
+                                <i class="fas fa-tasks"></i> Task Details
+                            </span>
+                            <span class="{% if step == 2 %}fw-bold text-primary{% endif %}">
+                                <i class="fas fa-calendar-check"></i> Assignment Details
+                            </span>
+                        </div>
+                        <div class="progress" style="height: 5px;">
+                            {% if step == 1 %}
+                                <div class="progress-bar" role="progressbar" style="width: 50%;" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                            {% else %}
+                                <div class="progress-bar" role="progressbar" style="width: 100%;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Flash Messages -->
+                    {% with messages = get_flashed_messages() %}
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert alert-info alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <!-- STEP 1: Task Creation Form -->
+                    {% if step == 1 %}
+                    <form method="POST" action="{{ url_for('create_task') }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <h5 class="mb-3 text-primary">Task Information</h5>
+                        
+                        <!-- Task Title -->
+                        <div class="mb-3">
+                            {{ form.title.label(class="form-label fw-bold") }}
+                            {{ form.title(class="form-control", placeholder="e.g., Complete onboarding paperwork") }}
+                            {% if form.title.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.title.errors %}
+                                        <small>{{ error }}</small><br>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Task Description -->
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label fw-bold") }}
+                            {{ form.description(class="form-control", rows="4", placeholder="Provide detailed instructions for this task...") }}
+                            {% if form.description.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.description.errors %}
+                                        <small>{{ error }}</small><br>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Task Classification (Project or Reminder) -->
+                        <div class="mb-3">
+                            {{ form.classification.label(class="form-label fw-bold") }}
+                            {{ form.classification(class="form-select") }}
+                            {% if form.classification.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.classification.errors %}
+                                        <small>{{ error }}</small><br>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                Choose <strong>Project</strong> for action items or <strong>Reminder</strong> for notifications.
+                            </small>
+                        </div>
+
+                        <!-- Assigned Role -->
+                        <div class="mb-3">
+                            {{ form.assigned_role.label(class="form-label fw-bold") }}
+                            {{ form.assigned_role(class="form-select") }}
+                            {% if form.assigned_role.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.assigned_role.errors %}
+                                        <small>{{ error }}</small><br>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                Select a role to assign to all users in that role, or choose "Specific Users" to select individuals.
+                            </small>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-arrow-right"></i> Continue to Assignment Details
+                            </button>
+                        </div>
+                    </form>
+                    {% endif %}
+
+                    <!-- STEP 2: Task Assignment Form -->
+                    {% if step == 2 %}
+                    <div class="alert alert-success mb-4">
+                        <h5 class="alert-heading">
+                            <i class="fas fa-check-circle"></i> Task Created: {{ task.title }}
+                        </h5>
+                        <p class="mb-0">
+                            <strong>Classification:</strong> {{ task.classification|title }}<br>
+                            <strong>Assignment Type:</strong> 
+                            {% if task.assigned_role == 'intern' %}
+                                All Interns
+                            {% elif task.assigned_role == 'volunteer' %}
+                                All Volunteers
+                            {% elif task.assigned_role == 'board' %}
+                                All Board Members
+                            {% elif task.assigned_role == 'specific' %}
+                                Specific Users (select below)
+                            {% endif %}
+                        </p>
+                    </div>
+
+                    <form method="POST" action="{{ url_for('create_task') }}">
+                        {{ form2.hidden_tag() }}
+                        
+                        <h5 class="mb-3 text-primary">Assignment Details</h5>
+
+                        <!-- Due Date -->
+                        <div class="mb-3">
+                            {{ form2.due_date.label(class="form-label fw-bold") }}
+                            {{ form2.due_date(class="form-control", type="date") }}
+                            {% if form2.due_date.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form2.due_date.errors %}
+                                        <small>{{ error }}</small><br>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Upload Required -->
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form2.upload_required(class="form-check-input", id="uploadRequired") }}
+                                {{ form2.upload_required.label(class="form-check-label", for="uploadRequired") }}
+                            </div>
+                            {% if form2.upload_required.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form2.upload_required.errors %}
+                                        <small>{{ error }}</small><br>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                Check this if users need to upload a document to complete this task.
+                            </small>
+                        </div>
+
+                        <!-- CONDITIONAL: Show different UI based on assigned_role -->
+                        
+                        {% if assigned_role == 'specific' %}
+                            <!-- SPECIFIC USERS: Show multi-select dropdown (SELECTABLE) -->
+                            <div class="mb-3">
+                                {{ form2.users_selected.label(class="form-label fw-bold") }}
+                                {{ form2.users_selected(class="form-select", multiple=true, size="10") }}
+                                {% if form2.users_selected.errors %}
+                                    <div class="text-danger mt-1">
+                                        {% for error in form2.users_selected.errors %}
+                                            <small>{{ error }}</small><br>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-info-circle"></i> Hold <kbd>Ctrl</kbd> (Windows) or <kbd>Cmd</kbd> (Mac) to select multiple users.
+                                </small>
+                            </div>
+                        
+                        {% else %}
+                            <!-- ROLE-BASED: Show read-only list of users who will receive task -->
+                            <div class="card bg-light mb-3">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-users"></i> Users who will receive this task:
+                                    </h6>
+                                    {% if users %}
+                                        <ul class="mb-0">
+                                            {% for user in users %}
+                                                <li>{{ user.name }} ({{ user.email }})</li>
+                                            {% endfor %}
+                                        </ul>
+                                        <div class="mt-2">
+                                            <span class="badge bg-primary">{{ users|length }} user{% if users|length != 1 %}s{% endif %}</span>
+                                        </div>
+                                    {% else %}
+                                        <p class="text-muted mb-0">
+                                            <i class="fas fa-exclamation-triangle"></i> No users found with this role.
+                                        </p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <!-- Action Buttons -->
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-check"></i> 
+                                {% if assigned_role == 'specific' %}
+                                    Assign Task to Selected Users
+                                {% else %}
+                                    Assign Task to All {{ assigned_role|title }}s
+                                {% endif %}
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Cancel Button -->
+                    <form method="POST" action="{{ url_for('cancel_task_creation') }}" class="mt-3">
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-outline-danger" 
+                                    onclick="return confirm('Are you sure? This will delete the task you just created.')">
+                                <i class="fas fa-times"></i> Cancel and Start Over
+                            </button>
+                        </div>
+                    </form>
+                    {% endif %}
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

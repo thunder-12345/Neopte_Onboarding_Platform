@@ -131,15 +131,18 @@ class Task(db.Model):
     assigned_role: Mapped[str] = mapped_column(nullable=True)  # e.g., "intern" for reminders
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
+    created_by_id: Mapped[int] = mapped_column(db.ForeignKey('users.id'), nullable=True)
+    created_by: Mapped["User"] = relationship("User", foreign_keys=[created_by_id])
     # Relationship to TaskAssignment
     assignments: Mapped[List["TaskAssignment"]] = relationship(
         "TaskAssignment", back_populates="task", cascade="all, delete-orphan"
     )
 
-    def __init__(self, classification, title, description, assigned_role=None):
+    def __init__(self, classification, title, description, created_by, assigned_role=None):
         self.classification = classification
         self.title = title
         self.description = description
+        self.created_by = created_by
         self.assigned_role = assigned_role
         self.created_at = func.now()
 
@@ -154,8 +157,10 @@ class TaskAssignment(db.Model):
     task_id: Mapped[int] = mapped_column(db.ForeignKey('tasks.id'), name="fk_taskassign_task_id")
     user_id: Mapped[int] = mapped_column(db.ForeignKey('users.id'), name="fk_taskassign_user_id")
 
-    status: Mapped[str] = mapped_column(default="pending")  # "pending" or "done"
-    upload: Mapped[str] = mapped_column(nullable=True)
+    due_date: Mapped[datetime] = mapped_column(DateTime, nullable=False) 
+    status: Mapped[str] = mapped_column(default="pending")  # "pending" or "done" or "graded"
+    upload: Mapped[bool] = mapped_column(default=False) 
+    filename: Mapped[str] = mapped_column(nullable=True) # can be used if upload is True
     score: Mapped[float] = mapped_column(nullable=True)
     comments: Mapped[str] = mapped_column(default="")
 
@@ -163,13 +168,14 @@ class TaskAssignment(db.Model):
     task: Mapped["Task"] = relationship("Task", back_populates="assignments")
     user: Mapped["User"] = relationship("User")
 
-    def __init__(self, task, user, status="pending", upload=None, score=None, comments=""):
+    def __init__(self, task, user, due_date, status="pending", upload=None, score=None, comments=""):
         self.task = task
         self.user = user
         self.status = status
         self.upload = upload
         self.score = score
         self.comments = comments
+        self.due_date = due_date
 
     def __repr__(self):
         return f"TaskAssignment: {self.task.title} -> {self.user.name} ({self.status})"

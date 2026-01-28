@@ -1,8 +1,8 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, FloatField
-from wtforms.validators import DataRequired, Email, EqualTo, NumberRange, Optional
+from wtforms.validators import DataRequired, Email, EqualTo, NumberRange, Optional, Length
 from wtforms import ValidationError
-from wtforms.fields import DateField, FileField
+from wtforms.fields import DateField, FileField, TextAreaField, SelectField, SelectMultipleField, BooleanField
 from flask_wtf.file import FileAllowed, FileRequired
 from wtforms_components import TimeField
 from project.models import User
@@ -44,3 +44,74 @@ class AddHoursForm(FlaskForm):
     description = StringField("Description: ", validators=[DataRequired()])
     submit = SubmitField("Add Hours")
 
+# In your project/forms.py file, update these forms:
+
+from flask_wtf import FlaskForm
+from wtforms import StringField, TextAreaField, SelectField, DateField, BooleanField, SelectMultipleField, SubmitField
+from wtforms.validators import DataRequired, Optional, Length
+
+class CreateTasksForm(FlaskForm):
+    """Form for creating a new task (Step 1)"""
+    
+    title = StringField(
+        'Task Title', 
+        validators=[DataRequired(), Length(min=3, max=200)]
+    )
+    
+    description = TextAreaField(
+        'Description', 
+        validators=[DataRequired(), Length(min=0, max=1000)]
+    )
+    
+    # Only 2 classification options: project and reminder
+    classification = SelectField(
+        'Classification',
+        choices=[
+            ('', '-- Select Classification --'),
+            ('project', 'Project'),
+            ('reminder', 'Reminder')
+        ],
+        validators=[DataRequired(message="Please select a classification")]
+    )
+    
+    # 4 role options: intern, volunteer, board, OR specific users
+    assigned_role = SelectField(
+        'Assign To',
+        choices=[
+            ('specific', 'Specific Users (Choose in Next Step)'),  # ← This triggers user selection
+            ('intern', 'All Interns'),
+            ('volunteer', 'All Volunteers'),
+            ('board', 'All Board Members')
+            
+        ],
+        validators=[DataRequired(message="Please select who to assign this to")]
+    )
+    
+    submit = SubmitField('Continue to Assignment')
+
+
+class CreateTaskAssignmentForm(FlaskForm):
+    """Form for assigning a task to users (Step 2)"""
+    
+    due_date = DateField(
+        'Due Date', 
+        validators=[DataRequired(message="Please select a due date")],
+        format='%Y-%m-%d'
+    )
+    
+    upload_required = BooleanField(
+        'Upload Required',
+        default=False
+    )
+    
+    # Multi-select for specific users (only shown when assigned_role == 'specific')
+    users_selected = SelectMultipleField(
+        'Select Specific Users',
+        coerce=int,  # Converts string IDs to integers
+        validators=[Optional()],
+        choices=[]  # Set dynamically in the route
+    )
+    
+    submit = SubmitField('Complete Task Creation')
+
+    

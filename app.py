@@ -1,10 +1,10 @@
 # Imports
 from project import db, app
 from project.decorators import permission_required
-from flask import render_template, redirect, request, url_for, flash, send_from_directory, send_file, current_app   
+from flask import render_template, redirect, request, url_for, flash, send_from_directory, send_file, current_app, session
 from flask_login import login_user, login_required, logout_user, current_user
-from project.models import User, Document, Hours, ActivityLog
-from project.forms import RegistrationForm, LoginForm, AddHoursForm, EditProfile
+from project.models import User, Document, Hours, ActivityLog, Task, TaskAssignment
+from project.forms import RegistrationForm, LoginForm, AddHoursForm, EditProfile, CreateTasksForm, CreateTaskAssignmentForm
 from project.activity import log_event
 
 from fileinput import filename
@@ -832,11 +832,160 @@ def download_certificate():
         download_name=f'neopte_volunteer_certificate_{user.name.replace(" ", "_")}.pdf'
     )
 
-@app.route("/policies")
+@app.route("/policies", methods=["GET"])
 @login_required
 @permission_required('volunteer')
 def policies():
     return render_template("policies.html")
+
+@app.route("/create/task", methods=["GET", "POST"])
+@login_required
+@permission_required('board')
+def create_task():
+    from flask import session
+    
+    # Step 1: Create the basic task
+    if 'task_id' not in session:
+        form = CreateTasksForm()
+        
+        if request.method == "POST" and form.validate_on_submit():
+            # Create the task with selected classification and assigned_role
+            task = Task(
+                title=form.data['title'],
+                description=form.data['description'],
+                classification=form.data['classification'],  # 'project' or 'reminder'
+                assigned_role=form.data['assigned_role'],    # 'intern', 'volunteer', 'board', or 'specific'
+                created_by=current_user
+            )
+            db.session.add(task)
+            db.session.commit()
+            
+            log_event(
+                actor=current_user,
+                action="task_created",
+                target_type="Task",
+                target_id=task.id,
+                details={
+                    "title": task.title,
+                    "classification": task.classification,
+                    "assigned_role": task.assigned_role
+                }
+            )
+            db.session.commit()
+            
+            # Store task info in session for step 2
+            session['task_id'] = task.id
+            session['assigned_role'] = task.assigned_role
+            
+            flash("Task created! Now set the assignment details.")
+            return redirect(url_for('create_task'))
+        
+        return render_template("create_task.html", form=form, step=1)
+    
+    # Step 2: Assign the task to users
+    else:
+        task_id = session.get('task_id')
+        assigned_role = session.get('assigned_role')
+        task = Task.query.get(task_id)
+        
+        if not task:
+            session.pop('task_id', None)
+            session.pop('assigned_role', None)
+            flash("Task not found. Please try again.")
+            return redirect(url_for('create_task'))
+        
+        form2 = CreateTaskAssignmentForm()
+        
+        # Get users based on assigned_role
+        if assigned_role in ['intern', 'volunteer', 'board']:
+            # Get users with that specific role (for read-only display)
+            users = User.query.filter_by(role=assigned_role).all()
+        elif assigned_role == 'specific':
+            # Get ALL users for the multi-select dropdown
+            users = User.query.all()
+            # Populate the dropdown choices
+            form2.users_selected.choices = [(u.id, f"{u.name} ({u.email})") for u in users]
+        else:
+            users = []
+        
+        if request.method == "POST" and form2.validate_on_submit():
+            due_date = form2.data['due_date']
+            upload_required = form2.data['upload_required']
+            
+            if assigned_role in ['intern', 'volunteer', 'board']:
+                # Assign to ALL users with that role
+                users_to_assign = User.query.filter_by(role=assigned_role).all()
+                
+                for user in users_to_assign:
+                    assignment = TaskAssignment(
+                        task=task,
+                        user=user,
+                        due_date=due_date,
+                        upload=upload_required,
+                        status="Assigned"
+                    )
+                    db.session.add(assignment)
+            
+            elif assigned_role == 'specific':
+                # Assign to SELECTED users only
+                user_ids = form2.users_selected.data
+                users_selected = User.query.filter(User.id.in_(user_ids)).all()
+                
+                if not users_selected:
+                    flash("Please select at least one user to assign the task to.")
+                    return render_template("create_task.html", 
+                                         form2=form2, 
+                                         step=2, 
+                                         task=task, 
+                                         users=users,
+                                         assigned_role=assigned_role)
+                
+                for user in users_selected:
+                    assignment = TaskAssignment(
+                        task=task,
+                        user=user,
+                        due_date=due_date,
+                        upload=upload_required,
+                        status="Assigned"
+                    )
+                    db.session.add(assignment)
+            
+            db.session.commit()
+            
+            # Clear session
+            session.pop('task_id', None)
+            session.pop('assigned_role', None)
+            
+            flash(f"Task has been created and assigned successfully!")
+            return redirect(url_for('create_task'))
+        
+        return render_template("create_task.html", 
+                             form2=form2, 
+                             step=2, 
+                             task=task, 
+                             users=users,
+                             assigned_role=assigned_role)
+
+# Optional: Route to cancel task creation and go back to step 1
+@app.route("/create/task/cancel", methods=["POST"])
+@login_required
+@permission_required('board')
+def cancel_task_creation():
+    from flask import session
+    
+    task_id = session.get('task_id')
+    if task_id:
+        # Delete the incomplete task
+        task = Task.query.get(task_id)
+        if task:
+            db.session.delete(task)
+            db.session.commit()
+    
+    session.pop('task_id', None)
+    session.pop('assigned_role', None)
+    
+    flash("Task creation cancelled.")
+    return redirect(url_for('create_task'))
 
 # Run the app if this file is executed directly
 if __name__ == "__main__": 
