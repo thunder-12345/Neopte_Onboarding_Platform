@@ -982,8 +982,115 @@ def cancel_task_creation():
     session.pop('task_id', None)
     session.pop('assigned_role', None)
     
-    flash("Task creation cancelled.")
     return redirect(url_for('create_task'))
+
+# Python route handler
+from datetime import datetime, timedelta
+
+@app.route("/tasks/status", methods=["GET"])
+@login_required
+@permission_required('volunteer')
+def task_status():
+    if current_user.role in ['volunteer', 'intern']:
+        # Get task assignments for current user
+        assignments = TaskAssignment.query.filter_by(user_id=current_user.id).order_by(TaskAssignment.due_date.asc()).all()
+        
+        # Add helper properties to categorize tasks by date
+        today = datetime.now().date()
+        week_start = today - timedelta(days=today.weekday())
+        week_end = week_start + timedelta(days=6)
+        next_week_start = week_end + timedelta(days=1)
+        next_week_end = next_week_start + timedelta(days=6)
+        
+        for assignment in assignments:
+            due_date = assignment.due_date.date() if assignment.due_date else None
+            
+            if due_date:
+                if due_date < today and assignment.status != "done" and assignment.status != "graded":
+                    assignment.is_overdue = True
+                    assignment.is_this_week = False
+                    assignment.is_next_week = False
+                    assignment.is_later = False
+                elif week_start <= due_date <= week_end:
+                    assignment.is_this_week = True
+                    assignment.is_overdue = False
+                    assignment.is_next_week = False
+                    assignment.is_later = False
+                elif next_week_start <= due_date <= next_week_end:
+                    assignment.is_next_week = True
+                    assignment.is_this_week = False
+                    assignment.is_overdue = False
+                    assignment.is_later = False
+                else:
+                    assignment.is_later = True
+                    assignment.is_this_week = False
+                    assignment.is_next_week = False
+                    assignment.is_overdue = False
+            else:
+                assignment.is_later = True
+                assignment.is_this_week = False
+                assignment.is_next_week = False
+                assignment.is_overdue = False
+        
+        return render_template("task_status_list.html", assignments=assignments, role=current_user.role)
+    
+    else:  # board or admin
+        users = User.query.all()
+        return render_template("task_status_list.html", users=users, role=current_user.role)
+
+
+@app.route("/tasks/user", methods=["GET"])
+@login_required
+@permission_required('board')
+def specific_user_tasks():
+    user_id = request.args.get('user_id', type=int)
+    
+    if not user_id:
+        return redirect(url_for('task_status'))
+    
+    user = User.query.get_or_404(user_id)
+    assignments = TaskAssignment.query.filter_by(user_id=user_id).order_by(TaskAssignment.due_date.asc()).all()
+    
+    # Add helper properties to categorize tasks by date
+    today = datetime.now().date()
+    week_start = today - timedelta(days=today.weekday())
+    week_end = week_start + timedelta(days=6)
+    next_week_start = week_end + timedelta(days=1)
+    next_week_end = next_week_start + timedelta(days=6)
+    
+    for assignment in assignments:
+        due_date = assignment.due_date.date() if assignment.due_date else None
+        
+        if due_date:
+            if due_date < today and assignment.status != "done" and assignment.status != "graded":
+                assignment.is_overdue = True
+                assignment.is_this_week = False
+                assignment.is_next_week = False
+                assignment.is_later = False
+            elif week_start <= due_date <= week_end:
+                assignment.is_this_week = True
+                assignment.is_overdue = False
+                assignment.is_next_week = False
+                assignment.is_later = False
+            elif next_week_start <= due_date <= next_week_end:
+                assignment.is_next_week = True
+                assignment.is_this_week = False
+                assignment.is_overdue = False
+                assignment.is_later = False
+            else:
+                assignment.is_later = True
+                assignment.is_this_week = False
+                assignment.is_next_week = False
+                assignment.is_overdue = False
+        else:
+            assignment.is_later = True
+            assignment.is_this_week = False
+            assignment.is_next_week = False
+            assignment.is_overdue = False
+    
+    return render_template("specific_user_tasks.html", user=user, assignments=assignments)
+
+
 
 # Run the app if this file is executed directly
 if __name__ == "__main__": 

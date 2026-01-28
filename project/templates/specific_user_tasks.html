@@ -1,0 +1,376 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<style>
+    body {
+        background-color: #f5f7fa;
+    }
+
+    .tasks-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 40px 20px;
+    }
+
+    .page-header {
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-bottom: 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .page-header h1 {
+        margin: 0;
+        color: #1e293b;
+        font-size: 32px;
+        font-weight: 600;
+    }
+
+    .back-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        background-color: #f1f5f9;
+        color: #475569;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: background-color 0.2s;
+    }
+
+    .back-btn:hover {
+        background-color: #e2e8f0;
+        color: #475569;
+    }
+
+    .section-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        margin-bottom: 30px;
+        overflow: hidden;
+    }
+
+    .section-header {
+        padding: 20px 30px;
+        border-bottom: 2px solid #f1f5f9;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .section-header h2 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 600;
+        color: #334155;
+    }
+
+    .section-header.overdue {
+        background-color: #fef2f2;
+        border-bottom-color: #fecaca;
+    }
+
+    .section-header.this-week {
+        background-color: #f0f9ff;
+        border-bottom-color: #bfdbfe;
+    }
+
+    .section-header.next-week {
+        background-color: #f0fdf4;
+        border-bottom-color: #bbf7d0;
+    }
+
+    .section-header.later {
+        background-color: #fefce8;
+        border-bottom-color: #fde047;
+    }
+
+    .task-list {
+        padding: 0;
+        margin: 0;
+        list-style: none;
+    }
+
+    .task-item {
+        padding: 20px 30px;
+        border-bottom: 1px solid #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: background-color 0.2s;
+    }
+
+    .task-item:last-child {
+        border-bottom: none;
+    }
+
+    .task-item:hover {
+        background-color: #f8fafc;
+    }
+
+    .task-main {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .task-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 4px;
+    }
+
+    .task-meta {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        margin-top: 8px;
+    }
+
+    .task-type {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 12px;
+        background-color: #e0f2fe;
+        color: #0369a1;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+    }
+
+    .task-date {
+        color: #64748b;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .task-status {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 16px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        white-space: nowrap;
+    }
+
+    .status-pending {
+        background-color: #f1f5f9;
+        color: #475569;
+    }
+
+    .status-done {
+        background-color: #dbeafe;
+        color: #1e40af;
+    }
+
+    .status-graded {
+        background-color: #dcfce7;
+        color: #166534;
+    }
+
+    .empty-state {
+        padding: 60px 30px;
+        text-align: center;
+        color: #94a3b8;
+    }
+
+    .empty-state-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+    }
+
+    .empty-state-text {
+        font-size: 16px;
+    }
+
+    .badge-count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 24px;
+        height: 24px;
+        padding: 0 8px;
+        background-color: #e2e8f0;
+        color: #475569;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .user-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        background-color: #f1f5f9;
+        border-radius: 8px;
+        font-size: 14px;
+        color: #64748b;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="tasks-container">
+    <div class="page-header">
+        <div>
+            <h1>📋 Tasks for {{ user.name }}</h1>
+            <div class="user-badge" style="margin-top: 12px;">
+                <span>Role: {{ user.role.title() }}</span>
+                <span>•</span>
+                <span>ID: {{ user.id }}</span>
+            </div>
+        </div>
+        <a href="{{ url_for('task_status') }}" class="back-btn">← Back to Users</a>
+    </div>
+
+    {% if assignments %}
+        <!-- Overdue Tasks -->
+        {% set overdue_tasks = assignments | selectattr('is_overdue', 'equalto', True) | list %}
+        {% if overdue_tasks %}
+        <div class="section-card">
+            <div class="section-header overdue">
+                <h2>⚠️ Overdue</h2>
+                <span class="badge-count">{{ overdue_tasks|length }}</span>
+            </div>
+            <ul class="task-list">
+                {% for assignment in overdue_tasks %}
+                <li class="task-item">
+                    <div class="task-main">
+                        <div class="task-title">{{ assignment.task.title }}</div>
+                        <div class="task-meta">
+                            <span class="task-type">{{ assignment.task.classification.title() }}</span>
+                            <span class="task-date">
+                                📅 {{ assignment.due_date.strftime('%b %d, %Y') if assignment.due_date else 'No date' }}
+                            </span>
+                        </div>
+                    </div>
+                    <span class="task-status 
+                        {% if assignment.status == 'graded' %}status-graded
+                        {% elif assignment.status == 'done' %}status-done
+                        {% else %}status-pending{% endif %}">
+                        {{ assignment.status.replace('_', ' ').title() }}
+                    </span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <!-- This Week -->
+        {% set this_week_tasks = assignments | selectattr('is_this_week', 'equalto', True) | list %}
+        {% if this_week_tasks %}
+        <div class="section-card">
+            <div class="section-header this-week">
+                <h2>📅 This Week</h2>
+                <span class="badge-count">{{ this_week_tasks|length }}</span>
+            </div>
+            <ul class="task-list">
+                {% for assignment in this_week_tasks %}
+                <li class="task-item">
+                    <div class="task-main">
+                        <div class="task-title">{{ assignment.task.title }}</div>
+                        <div class="task-meta">
+                            <span class="task-type">{{ assignment.task.classification.title() }}</span>
+                            <span class="task-date">
+                                📅 {{ assignment.due_date.strftime('%b %d, %Y') if assignment.due_date else 'No date' }}
+                            </span>
+                        </div>
+                    </div>
+                    <span class="task-status 
+                        {% if assignment.status == 'graded' %}status-graded
+                        {% elif assignment.status == 'done' %}status-done
+                        {% else %}status-pending{% endif %}">
+                        {{ assignment.status.replace('_', ' ').title() }}
+                    </span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <!-- Next Week -->
+        {% set next_week_tasks = assignments | selectattr('is_next_week', 'equalto', True) | list %}
+        {% if next_week_tasks %}
+        <div class="section-card">
+            <div class="section-header next-week">
+                <h2>📆 Next Week</h2>
+                <span class="badge-count">{{ next_week_tasks|length }}</span>
+            </div>
+            <ul class="task-list">
+                {% for assignment in next_week_tasks %}
+                <li class="task-item">
+                    <div class="task-main">
+                        <div class="task-title">{{ assignment.task.title }}</div>
+                        <div class="task-meta">
+                            <span class="task-type">{{ assignment.task.classification.title() }}</span>
+                            <span class="task-date">
+                                📅 {{ assignment.due_date.strftime('%b %d, %Y') if assignment.due_date else 'No date' }}
+                            </span>
+                        </div>
+                    </div>
+                    <span class="task-status 
+                        {% if assignment.status == 'graded' %}status-graded
+                        {% elif assignment.status == 'done' %}status-done
+                        {% else %}status-pending{% endif %}">
+                        {{ assignment.status.replace('_', ' ').title() }}
+                    </span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <!-- Later -->
+        {% set later_tasks = assignments | selectattr('is_later', 'equalto', True) | list %}
+        {% if later_tasks %}
+        <div class="section-card">
+            <div class="section-header later">
+                <h2>🗓️ Later</h2>
+                <span class="badge-count">{{ later_tasks|length }}</span>
+            </div>
+            <ul class="task-list">
+                {% for assignment in later_tasks %}
+                <li class="task-item">
+                    <div class="task-main">
+                        <div class="task-title">{{ assignment.task.title }}</div>
+                        <div class="task-meta">
+                            <span class="task-type">{{ assignment.task.classification.title() }}</span>
+                            <span class="task-date">
+                                📅 {{ assignment.due_date.strftime('%b %d, %Y') if assignment.due_date else 'No date' }}
+                            </span>
+                        </div>
+                    </div>
+                    <span class="task-status 
+                        {% if assignment.status == 'graded' %}status-graded
+                        {% elif assignment.status == 'done' %}status-done
+                        {% else %}status-pending{% endif %}">
+                        {{ assignment.status.replace('_', ' ').title() }}
+                    </span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+    {% else %}
+        <div class="section-card">
+            <div class="empty-state">
+                <div class="empty-state-icon">📝</div>
+                <div class="empty-state-text">No tasks assigned to this user yet</div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+{% endblock %}

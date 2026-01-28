@@ -45,12 +45,6 @@ class AddHoursForm(FlaskForm):
     description = StringField("Description: ", validators=[DataRequired()])
     submit = SubmitField("Add Hours")
 
-# In your project/forms.py file, update these forms:
-
-from flask_wtf import FlaskForm
-from wtforms import StringField, TextAreaField, SelectField, DateField, BooleanField, SelectMultipleField, SubmitField
-from wtforms.validators import DataRequired, Optional, Length
-
 class CreateTasksForm(FlaskForm):
     """Form for creating a new task (Step 1)"""
     

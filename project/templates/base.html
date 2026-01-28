@@ -252,6 +252,9 @@
                     <li>
                       <a class="dropdown-item" href="{{ url_for('create_task') }}">Create Task</a>
                     </li>
+                    <li>
+                      <a class="dropdown-item" href="{{ url_for('task_status') }}">Tasks Status</a>
+                    </li>
                   </ul>
                 </li>
 
@@ -262,14 +265,17 @@
                 </style>
 
                 {% endif %}
-
+              
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('task_status') }}">Tasks Status</a>
+            </li>
             <li class="nav-item">
               <a class="nav-link" href="{{ url_for('document_status') }}">Document Status</a>
             </li>
             <li class="nav-item">
               <a class="nav-link" 
               href="{{ url_for('hours_log') }}">
-                  View Hours Log </a>
+                  Hours Log </a>
             </li>
             <li class="nav-item">
               <a class="nav-link" 
