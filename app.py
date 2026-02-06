@@ -16,7 +16,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.units import inch
 from reportlab.lib import colors
 import io
-from datetime import datetime
+from datetime import datetime, date
 
 
 # Mapping user roles to their dashboard route names
@@ -26,6 +26,13 @@ redirect_target = {
     "board": "board_dashboard",
     "admin": "admin_dashboard"
 }
+
+@app.context_processor
+def inject_now():
+    return {
+        'now': datetime.now,
+        'today': date.today
+    }
 
 # List of possible user roles
 roles = ["intern", "user", "volunteer", "board"]
@@ -61,7 +68,8 @@ with app.app_context():
             name="REAL ADMIN",
             email="realadmin@gmail.com",
             password="admin123",   # password hashed in User model
-            role="admin"
+            role="admin",
+            picture="default.jpeg"
         )
         print(realAdmin.role)
         db.session.add(realAdmin)
@@ -75,8 +83,8 @@ with app.app_context():
                 name=u["name"],
                 email=u["email"],
                 password=u["password"],
-                role=u["role"], 
                 picture="default.jpeg",
+                role=u["role"], 
             )
             db.session.add(user)
             print(f"Adding {u['name']} ({u['role']})")
@@ -851,11 +859,11 @@ def create_task():
         if request.method == "POST" and form.validate_on_submit():
             # Create the task with selected classification and assigned_role
             task = Task(
-                title=form.data['title'],
-                description=form.data['description'],
-                classification=form.data['classification'],  # 'project' or 'reminder'
-                assigned_role=form.data['assigned_role'],    # 'intern', 'volunteer', 'board', or 'specific'
-                created_by=current_user
+                classification=form.data['classification'],  # First parameter
+                title=form.data['title'],                    # Second parameter
+                description=form.data['description'],        # Third parameter
+                created_by=current_user.id,                  # Fourth parameter (INTEGER)
+                assigned_role=form.data['assigned_role']     # Fifth parameter
             )
             db.session.add(task)
             db.session.commit()
@@ -917,13 +925,17 @@ def create_task():
                 users_to_assign = User.query.filter_by(role=assigned_role).all()
                 
                 for user in users_to_assign:
-                    assignment = TaskAssignment(
-                        task=task,
-                        user=user,
-                        due_date=due_date,
-                        upload=upload_required
-                    )
-                    db.session.add(assignment)
+                    # Create empty object
+                        assignment = TaskAssignment()
+
+                        # Set fields individually
+                        assignment.task_id = task.id
+                        assignment.user_id = user.id
+                        assignment.due_date = due_date
+                        assignment.upload_required = upload_required
+
+                        # Add to database
+                        db.session.add(assignment)
             
             elif assigned_role == 'specific':
                 # Assign to SELECTED users only
@@ -1090,7 +1102,195 @@ def specific_user_tasks():
     
     return render_template("specific_user_tasks.html", user=user, assignments=assignments)
 
+# ============================================================================
+# VIEW TASK DETAILS (Volunteer/Intern clicks on a task)
+# ============================================================================
+@app.route("/task/view/<int:assignment_id>", methods=["GET"])
+@login_required
+@permission_required('volunteer')
+def view_task(assignment_id):
+    """
+    Shows a detailed popup view of a specific task assignment.
+    Volunteers/interns can see all task details and mark as complete.
+    """
+    # Get the task assignment for this user
+    assignment = TaskAssignment.query.get_or_404(assignment_id)
+    
+    # Make sure this assignment belongs to the current user (security check)
+    if assignment.user_id != current_user.id and current_user.role not in ['board', 'admin']:
+        flash("You don't have permission to view this task.")
+        return redirect(url_for(redirect_target.get(current_user.role, "user_dashboard")))
+    
+    # Get the full task details (already available via assignment.task relationship)
+    task = assignment.task
+    
+    return render_template("task_detail_popup.html", 
+                         assignment=assignment, 
+                         task=task)
 
+
+# ============================================================================
+# MARK TASK AS COMPLETE (Volunteer submits completion)
+# ============================================================================
+@app.route("/task/complete/<int:assignment_id>", methods=["POST"])
+@login_required
+@permission_required('volunteer')
+def complete_task(assignment_id):
+    """
+    Volunteer marks task as complete.
+    If upload=True, they must upload a file.
+    Status changes to "done" and waits for board to grade it.
+    """
+    assignment = TaskAssignment.query.get_or_404(assignment_id)
+    
+    # Security check
+    if assignment.user_id != current_user.id:
+        flash("You don't have permission to complete this task.")
+        return redirect(url_for(redirect_target.get(current_user.role, "user_dashboard")))
+    
+    task = assignment.task
+    
+    # Handle file upload if required
+    if assignment.upload:  # Using your existing 'upload' field (boolean)
+        uploaded_file = request.files.get('completion_file')
+        
+        if not uploaded_file or not uploaded_file.filename:
+            flash("This task requires a file upload to complete.")
+            return redirect(url_for('view_task', assignment_id=assignment_id))
+        
+        if not allowed_file(uploaded_file.filename):
+            flash("File type not allowed.")
+            return redirect(url_for('view_task', assignment_id=assignment_id))
+        
+        # Save the file
+        filename = secure_filename(uploaded_file.filename)
+        # Make filename unique by adding assignment ID
+        unique_filename = f"task_{assignment.id}_{filename}"
+        uploaded_file.save(os.path.join(app.config['UPLOAD_PATH'], unique_filename))
+        
+        # Store filename in assignment (using your existing 'filename' field)
+        assignment.filename = unique_filename
+    
+    # Get completion comments (using your existing 'comments' field)
+    completion_comments = request.form.get('completion_comments', '')
+    if completion_comments:
+        assignment.comments = completion_comments
+    
+    # Mark as done (using your existing status field)
+    # Status progression: "pending" -> "done" -> "graded" (after board reviews)
+    assignment.status = "done"
+    
+    log_event(
+        actor=current_user,
+        action="task_completed",
+        target_type="TaskAssignment",
+        target_id=assignment.id,
+        details={
+            "task_title": task.title,
+            "upload_required": assignment.upload
+        }
+    )
+    
+    db.session.commit()
+    
+    flash(f"Task '{task.title}' submitted for review!")
+    return redirect(url_for('my_tasks'))
+
+
+# ============================================================================
+# PENDING TASKS (Board/Admin review page)
+# ============================================================================
+@app.route('/pending/tasks', methods=['GET'])
+@login_required
+@permission_required('board')
+def pending_tasks():
+    """
+    Shows all tasks that have been marked "done" by volunteers
+    and are waiting for board to grade/approve them.
+    """
+    # Get all task assignments with "done" status (waiting for grading)
+    pending_assignments = TaskAssignment.query.filter_by(status="done").all()
+    
+    return render_template('pending_tasks.html', assignments=pending_assignments)
+
+
+# ============================================================================
+# GRADE/APPROVE TASK (Board reviews and grades)
+# ============================================================================
+@app.route("/task/grade/<int:assignment_id>", methods=["POST"])
+@login_required
+@permission_required('board')
+def grade_task(assignment_id):
+    """
+    Board members can grade/approve completed tasks.
+    Sets score and changes status to "graded".
+    """
+    assignment = TaskAssignment.query.get_or_404(assignment_id)
+    task = assignment.task
+    
+    # Get score and feedback from form
+    score = request.form.get("score", type=float)
+    feedback = request.form.get("feedback", type=str)
+    
+    old_status = assignment.status
+    
+    # Update assignment
+    if score is not None:
+        assignment.score = score
+    
+    if feedback:
+        # Append board feedback to existing comments
+        if assignment.comments:
+            assignment.comments += f"\n\n--- Board Feedback ---\n{feedback}"
+        else:
+            assignment.comments = f"--- Board Feedback ---\n{feedback}"
+    
+    assignment.status = "graded"
+    
+    log_event(
+        actor=current_user,
+        action="task_graded",
+        target_type="TaskAssignment",
+        target_id=assignment.id,
+        details={
+            "task_title": task.title,
+            "score": score,
+            "old_status": old_status,
+            "user_id": assignment.user_id
+        }
+    )
+    
+    db.session.commit()
+    
+    flash(f"Task graded successfully.")
+    return redirect(request.referrer or url_for('pending_tasks'))
+
+
+# ============================================================================
+# MY TASKS (Volunteer/Intern dashboard)
+# ============================================================================
+@app.route("/my/tasks", methods=["GET"])
+@login_required
+@permission_required('volunteer')
+def my_tasks():
+    """
+    Shows all tasks assigned to the current user.
+    """
+    # Get all task assignments for this user
+    assignments = TaskAssignment.query.filter_by(user_id=current_user.id).all()
+    
+    # Organize by status
+    # "pending" = not started yet
+    # "done" = submitted, waiting for grading
+    # "graded" = completed and graded by board
+    assigned_tasks = [a for a in assignments if a.status == "pending"]
+    pending_review = [a for a in assignments if a.status == "done"]
+    completed_tasks = [a for a in assignments if a.status == "graded"]
+    
+    return render_template("my_tasks.html",
+                         assigned=assigned_tasks,
+                         pending=pending_review,
+                         completed=completed_tasks)
 
 # Run the app if this file is executed directly
 if __name__ == "__main__": 

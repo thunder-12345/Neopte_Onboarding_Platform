@@ -120,67 +120,40 @@ class ActivityLog(db.Model):
             f"<ActivityLog {self.action} "
             f"on {self.target_type}:{self.target_id}>"
         )
-
-class Task(db.Model):
-    __tablename__ = 'tasks'
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    classification: Mapped[str] = mapped_column()  # "project" or "reminder"
-    title: Mapped[str] = mapped_column()
-    description: Mapped[str] = mapped_column()
-    assigned_role: Mapped[str] = mapped_column(nullable=True)  # e.g., "intern" for reminders
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
-
-    created_by_id: Mapped[int] = mapped_column(db.ForeignKey('users.id'), nullable=True)
-    created_by: Mapped["User"] = relationship("User", foreign_keys=[created_by_id])
-    # Relationship to TaskAssignment
-    assignments: Mapped[List["TaskAssignment"]] = relationship(
-        "TaskAssignment", back_populates="task", cascade="all, delete-orphan"
-    )
-
-    def __init__(self, classification, title, description, created_by, assigned_role=None):
-        self.classification = classification
-        self.title = title
-        self.description = description
-        self.created_by = created_by
-        self.assigned_role = assigned_role
-        self.created_at = func.now()
-
-    def __repr__(self):
-        return f"Task: {self.title} ({self.classification})"
-
-
 class TaskAssignment(db.Model):
     __tablename__ = 'task_assignments'
-
+    
     id: Mapped[int] = mapped_column(primary_key=True)
     task_id: Mapped[int] = mapped_column(db.ForeignKey('tasks.id'), name="fk_taskassign_task_id")
     user_id: Mapped[int] = mapped_column(db.ForeignKey('users.id'), name="fk_taskassign_user_id")
-
     due_date: Mapped[datetime] = mapped_column(DateTime, nullable=False) 
-    status: Mapped[str] = mapped_column(default="pending")  # "pending" or "done" or "graded"
+    status: Mapped[str] = mapped_column(default="pending")
     upload: Mapped[bool] = mapped_column(default=False) 
-    filename: Mapped[str] = mapped_column(nullable=True) # can be used if upload is True
+    filename: Mapped[str] = mapped_column(nullable=True)
     score: Mapped[float] = mapped_column(nullable=True)
     comments: Mapped[str] = mapped_column(default="")
-
+    
     # Relationships
     task: Mapped["Task"] = relationship("Task", back_populates="assignments")
     user: Mapped["User"] = relationship("User")
 
-    def __init__(self, task, user, due_date, status="pending", upload=None, score=None, comments=""):
-        self.task = task
-        self.user = user
-        self.status = status
-        self.upload = upload
-        self.score = score
-        self.comments = comments
-        self.due_date = due_date
-
-    def __repr__(self):
-        return f"TaskAssignment: {self.task.title} -> {self.user.name} ({self.status})"
-
-
-
-
-
+class Task(db.Model):
+    __tablename__ = 'tasks'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    classification = db.Column(db.String(50), nullable=False)  # 'project' or 'reminder'
+    assigned_role = db.Column(db.String(50), nullable=False)   # 'intern', 'volunteer', 'board', 'specific'
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # ========================================================================
+    # ADD THIS RELATIONSHIP TO ACCESS CREATOR INFO
+    # ========================================================================
+    created_by_user = db.relationship('User', foreign_keys=[created_by], backref='created_tasks', lazy=True)
+    assignments: Mapped[List["TaskAssignment"]] = relationship(
+        "TaskAssignment", 
+        back_populates="task", 
+        cascade="all, delete-orphan"
+    )

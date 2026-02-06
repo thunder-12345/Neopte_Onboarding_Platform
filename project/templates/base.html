@@ -264,11 +264,12 @@
                   }
                 </style>
 
-                {% endif %}
-              
-            <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('task_status') }}">Tasks Status</a>
-            </li>
+            
+            {% else %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{{ url_for('my_tasks') }}">Tasks Status</a>
+                </li>
+            {% endif %}
             <li class="nav-item">
               <a class="nav-link" href="{{ url_for('document_status') }}">Document Status</a>
             </li>

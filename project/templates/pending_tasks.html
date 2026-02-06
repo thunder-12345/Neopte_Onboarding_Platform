@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">
+                <i class="fas fa-tasks"></i> Pending Task Reviews
+                <span class="badge bg-warning text-dark">{{ assignments|length }}</span>
+            </h2>
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% if assignments %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>User</th>
+                                <th>Task</th>
+                                <th>Type</th>
+                                <th>Due Date</th>
+                                <th>Upload</th>
+                                <th>Comments</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for assignment in assignments %}
+                                {% set task = assignment.task %}
+                                {% set user = assignment.user %}
+                                <tr>
+                                    <!-- User Info -->
+                                    <td>
+                                        <strong>{{ user.name }}</strong><br>
+                                        <small class="text-muted">{{ user.email }}</small>
+                                    </td>
+
+                                    <!-- Task Title -->
+                                    <td>
+                                        <strong>{{ task.title }}</strong><br>
+                                        <small class="text-muted">{{ task.description[:50] }}{% if task.description|length > 50 %}...{% endif %}</small>
+                                    </td>
+
+                                    <!-- Classification -->
+                                    <td>
+                                        <span class="badge {% if task.classification == 'project' %}bg-primary{% else %}bg-info{% endif %}">
+                                            {{ task.classification|title }}
+                                        </span>
+                                    </td>
+
+                                    <!-- Due Date -->
+                                    <td>
+                                        {{ assignment.due_date.strftime('%b %d, %Y') }}
+                                        {% if assignment.due_date.date() < now().date() %}
+                                            <br><span class="badge bg-danger">Was Overdue</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <!-- Upload -->
+                                    <td>
+                                        {% if assignment.upload %}
+                                            {% if assignment.filename %}
+                                                <a href="{{ url_for('static', filename='uploads/' + assignment.filename) }}" 
+                                                   class="btn btn-sm btn-outline-primary" target="_blank">
+                                                    <i class="fas fa-file-pdf"></i> View
+                                                </a>
+                                            {% else %}
+                                                <span class="text-warning">
+                                                    <i class="fas fa-exclamation-triangle"></i> Missing
+                                                </span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">Not Required</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <!-- Comments -->
+                                    <td>
+                                        {% if assignment.comments %}
+                                            <button type="button" class="btn btn-sm btn-outline-info" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#commentsModal{{ assignment.id }}">
+                                                <i class="fas fa-comment"></i> View
+                                            </button>
+
+                                            <!-- Comments Modal -->
+                                            <div class="modal fade" id="commentsModal{{ assignment.id }}" tabindex="-1">
+                                                <div class="modal-dialog">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title">Completion Comments</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <p><strong>User:</strong> {{ user.name }}</p>
+                                                            <p><strong>Task:</strong> {{ task.title }}</p>
+                                                            <hr>
+                                                            <p style="white-space: pre-line;">{{ assignment.comments }}</p>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {% else %}
+                                            <span class="text-muted">None</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <!-- Actions -->
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-success" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#gradeModal{{ assignment.id }}"
+                                                title="Grade Task">
+                                            <i class="fas fa-check"></i> Grade
+                                        </button>
+
+                                        <a href="{{ url_for('view_task', assignment_id=assignment.id) }}" 
+                                           class="btn btn-sm btn-outline-secondary" title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+
+                                        <!-- Grade Modal -->
+                                        <div class="modal fade" id="gradeModal{{ assignment.id }}" tabindex="-1">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header bg-success text-white">
+                                                        <h5 class="modal-title">
+                                                            <i class="fas fa-graduation-cap"></i> Grade Task
+                                                        </h5>
+                                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <form method="POST" action="{{ url_for('grade_task', assignment_id=assignment.id) }}">
+                                                        <div class="modal-body">
+                                                            <p><strong>User:</strong> {{ user.name }}</p>
+                                                            <p><strong>Task:</strong> {{ task.title }}</p>
+                                                            
+                                                            {% if assignment.filename %}
+                                                            <p>
+                                                                <strong>Submitted File:</strong> 
+                                                                <a href="{{ url_for('static', filename='uploads/' + assignment.filename) }}" 
+                                                                   target="_blank" class="btn btn-sm btn-outline-primary">
+                                                                    <i class="fas fa-external-link-alt"></i> View File
+                                                                </a>
+                                                            </p>
+                                                            {% endif %}
+
+                                                            {% if assignment.comments %}
+                                                            <div class="alert alert-info">
+                                                                <strong>Student's Comments:</strong><br>
+                                                                <small style="white-space: pre-line;">{{ assignment.comments[:200] }}{% if assignment.comments|length > 200 %}...{% endif %}</small>
+                                                            </div>
+                                                            {% endif %}
+                                                            
+                                                            <hr>
+
+                                                            <!-- Score Input -->
+                                                            <div class="mb-3">
+                                                                <label for="score{{ assignment.id }}" class="form-label fw-bold">
+                                                                    Score (Optional)
+                                                                </label>
+                                                                <input type="number" 
+                                                                       class="form-control" 
+                                                                       id="score{{ assignment.id }}" 
+                                                                       name="score" 
+                                                                       step="0.1" 
+                                                                       min="0" 
+                                                                       max="100"
+                                                                       placeholder="e.g., 95">
+                                                                <small class="form-text text-muted">
+                                                                    Enter a score out of 100, or leave blank.
+                                                                </small>
+                                                            </div>
+
+                                                            <!-- Feedback -->
+                                                            <div class="mb-3">
+                                                                <label for="feedback{{ assignment.id }}" class="form-label fw-bold">
+                                                                    Feedback (Optional)
+                                                                </label>
+                                                                <textarea 
+                                                                    class="form-control" 
+                                                                    id="feedback{{ assignment.id }}" 
+                                                                    name="feedback" 
+                                                                    rows="4"
+                                                                    placeholder="Provide feedback to the student..."></textarea>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                            <button type="submit" class="btn btn-success">
+                                                                <i class="fas fa-check"></i> Submit Grade
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No tasks pending review at this time.
+                </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+
+<style>
+    .table td {
+        vertical-align: middle;
+    }
+    
+    .table tbody tr:hover {
+        background-color: rgba(0, 123, 255, 0.05);
+    }
+</style>
+
+{% endblock %}

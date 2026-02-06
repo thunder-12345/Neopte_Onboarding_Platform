@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container mt-4">
+    <!-- Back Button -->
+    <a href="{{ url_for('my_tasks') }}" class="btn btn-outline-secondary mb-3">
+        <i class="fas fa-arrow-left"></i> Back to My Tasks
+    </a>
+
+    <!-- Task Detail Card (Large popup-style) -->
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10">
+            <div class="card shadow-lg border-0">
+                
+                <!-- Header with Task Type Badge -->
+                <div class="card-header bg-gradient text-white {% if task.classification == 'project' %}bg-primary{% else %}bg-info{% endif %} py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3 class="mb-0">
+                            <i class="fas {% if task.classification == 'project' %}fa-project-diagram{% else %}fa-bell{% endif %}"></i>
+                            {{ task.title }}
+                        </h3>
+                        <span class="badge {% if task.classification == 'project' %}bg-white text-primary{% else %}bg-white text-info{% endif %} fs-6">
+                            {{ task.classification|title }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="card-body p-4">
+                    
+                    <!-- Status Badge -->
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-2">Current Status:</h6>
+                        <span class="badge 
+                            {% if assignment.status == 'pending' %}bg-warning text-dark
+                            {% elif assignment.status == 'done' %}bg-info
+                            {% elif assignment.status == 'graded' %}bg-success
+                            {% endif %} fs-6 px-3 py-2">
+                            <i class="fas 
+                                {% if assignment.status == 'pending' %}fa-clock
+                                {% elif assignment.status == 'done' %}fa-hourglass-half
+                                {% elif assignment.status == 'graded' %}fa-check-circle
+                                {% endif %}"></i>
+                            {% if assignment.status == 'pending' %}To Do
+                            {% elif assignment.status == 'done' %}Pending Review
+                            {% elif assignment.status == 'graded' %}Completed & Graded
+                            {% endif %}
+                        </span>
+                        
+                        <!-- Show score if graded -->
+                        {% if assignment.status == 'graded' and assignment.score is not none %}
+                            <span class="badge bg-success fs-6 px-3 py-2 ms-2">
+                                <i class="fas fa-star"></i> Score: {{ assignment.score }}
+                            </span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Task Description -->
+                    <div class="mb-4">
+                        <h5 class="text-primary mb-3">
+                            <i class="fas fa-info-circle"></i> Description
+                        </h5>
+                        <p class="lead text-muted" style="white-space: pre-line;">{{ task.description }}</p>
+                    </div>
+
+                    <hr>
+
+                    <!-- Task Details Grid -->
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-muted mb-2">
+                                <i class="fas fa-calendar-alt"></i> Due Date
+                            </h6>
+                            <p class="fs-5 fw-bold {% if assignment.due_date.date() < now().date() and assignment.status == 'pending' %}text-danger{% else %}text-dark{% endif %}">
+                                {{ assignment.due_date.strftime('%B %d, %Y') }}
+                                {% if assignment.due_date.date() < now().date() and assignment.status == 'pending' %}
+                                    <span class="badge bg-danger ms-2">Overdue</span>
+                                {% endif %}
+                            </p>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-muted mb-2">
+                                <i class="fas fa-user-tie"></i> Created By
+                            </h6>
+                            <p class="fs-5">
+                                {% if task.created_by %}
+                                    {{ task.created_by.name }}
+                                {% else %}
+                                    Administrator
+                                {% endif %}
+                            </p>
+                        </div>
+
+                        {% if task.classification == 'project' %}
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-muted mb-2">
+                                <i class="fas fa-upload"></i> Upload Required
+                            </h6>
+                            <p class="fs-5">
+                                {% if assignment.upload %}
+                                    <span class="badge bg-warning text-dark">Yes - File Required</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">No Upload Needed</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        {% endif %}
+
+                        <!-- Show uploaded file if exists -->
+                        {% if assignment.filename %}
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-muted mb-2">
+                                <i class="fas fa-file"></i> Uploaded File
+                            </h6>
+                            <p class="fs-6">
+                                <a href="{{ url_for('static', filename='uploads/' + assignment.filename) }}" 
+                                   class="btn btn-sm btn-outline-primary" target="_blank">
+                                    <i class="fas fa-download"></i> {{ assignment.filename }}
+                                </a>
+                            </p>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Comments/Feedback -->
+                    {% if assignment.comments %}
+                    <div class="alert alert-info mb-4">
+                        <h6 class="alert-heading">
+                            <i class="fas fa-comments"></i> Comments & Feedback
+                        </h6>
+                        <p class="mb-0" style="white-space: pre-line;">{{ assignment.comments }}</p>
+                    </div>
+                    {% endif %}
+
+                    <hr>
+
+                    <!-- Completion Form (only if status is "pending") -->
+                    {% if assignment.status == 'pending' %}
+                    <div class="bg-light p-4 rounded">
+                        <h5 class="text-success mb-3">
+                            <i class="fas fa-tasks"></i> Mark as Complete
+                        </h5>
+
+                        <form method="POST" action="{{ url_for('complete_task', assignment_id=assignment.id) }}" enctype="multipart/form-data">
+                            
+                            <!-- Completion Comments -->
+                            <div class="mb-3">
+                                <label for="completionComments" class="form-label fw-bold">
+                                    Completion Comments (Optional)
+                                </label>
+                                <textarea 
+                                    class="form-control" 
+                                    id="completionComments" 
+                                    name="completion_comments" 
+                                    rows="3" 
+                                    placeholder="Add any notes about how you completed this task...">{{ assignment.comments }}</textarea>
+                                <small class="form-text text-muted">
+                                    Explain what you did to complete this task.
+                                </small>
+                            </div>
+
+                            <!-- File Upload (only for projects that require upload) -->
+                            {% if task.classification == 'project' and assignment.upload %}
+                            <div class="mb-3">
+                                <label for="completionFile" class="form-label fw-bold">
+                                    <i class="fas fa-upload"></i> Upload Completion File 
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <input 
+                                    type="file" 
+                                    class="form-control" 
+                                    id="completionFile" 
+                                    name="completion_file" 
+                                    required>
+                                <small class="form-text text-muted">
+                                    Accepted formats: PDF, DOC, DOCX, JPG, PNG
+                                </small>
+                            </div>
+                            {% endif %}
+
+                            <!-- Submit Button -->
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-success btn-lg">
+                                    <i class="fas fa-check-circle"></i> 
+                                    Submit for Review
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    {% elif assignment.status == 'done' %}
+                    <!-- Already Submitted Message -->
+                    <div class="alert alert-info">
+                        <h5 class="alert-heading">
+                            <i class="fas fa-hourglass-half"></i> Submitted and Pending Review
+                        </h5>
+                        <p class="mb-0">
+                            You've submitted this task for review. A board member will grade it soon.
+                        </p>
+                    </div>
+
+                    {% elif assignment.status == 'graded' %}
+                    <!-- Graded Message -->
+                    <div class="alert alert-success">
+                        <h5 class="alert-heading">
+                            <i class="fas fa-check-circle"></i> Task Graded!
+                        </h5>
+                        <p class="mb-2">
+                            This task has been reviewed and graded by the board.
+                        </p>
+                        {% if assignment.score is not none %}
+                        <p class="mb-0">
+                            <strong>Your Score:</strong> 
+                            <span class="badge bg-success fs-6">{{ assignment.score }}</span>
+                        </p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                </div>
+
+                <!-- Footer with Close Button -->
+                <div class="card-footer bg-light">
+                    <div class="d-grid">
+                        <a href="{{ url_for('my_tasks') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times"></i> Close
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-gradient {
+        background: linear-gradient(135deg, var(--bs-primary) 0%, var(--bs-primary-dark, #0056b3) 100%);
+    }
+    
+    .card {
+        animation: slideIn 0.3s ease-out;
+    }
+    
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+
+{% endblock %}
