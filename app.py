@@ -999,6 +999,8 @@ def cancel_task_creation():
 # Python route handler
 from datetime import datetime, timedelta
 
+# Replace your task_status route with this:
+
 @app.route("/tasks/status", methods=["GET"])
 @login_required
 @permission_required('volunteer')
@@ -1047,9 +1049,13 @@ def task_status():
         return render_template("task_status_list.html", assignments=assignments, role=current_user.role)
     
     else:  # board or admin
-        users = User.query.all()
+        # IMPORTANT: Load users with their task_assignments relationship
+        # This allows the template to access user.task_assignments
+        from sqlalchemy.orm import joinedload
+        
+        users = User.query.options(joinedload(User.task_assignments)).all()
+        
         return render_template("task_status_list.html", users=users, role=current_user.role)
-
 
 @app.route("/tasks/user", methods=["GET"])
 @login_required
@@ -1123,10 +1129,16 @@ def view_task(assignment_id):
     
     # Get the full task details (already available via assignment.task relationship)
     task = assignment.task
+
+    is_overdue = (
+        assignment.due_date.date() < date.today()
+        and assignment.status == "pending"
+    )
     
     return render_template("task_detail_popup.html", 
                          assignment=assignment, 
-                         task=task)
+                         task=task, 
+                         is_overdue=is_overdue)
 
 
 # ============================================================================

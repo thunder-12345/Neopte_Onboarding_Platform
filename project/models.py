@@ -26,6 +26,12 @@ class User(db.Model, UserMixin):
 
     hours: Mapped[List["Hours"]] = relationship("Hours", back_populates="user", cascade="all, delete-orphan")
     documents: Mapped[List["Document"]] = relationship("Document", back_populates="user", cascade="all, delete-orphan")
+    task_assignments: Mapped[List["TaskAssignment"]] = relationship(
+        "TaskAssignment", 
+        back_populates="user", 
+        cascade="all, delete-orphan"
+    )
+    
 
     def __init__(self, name, email, password, picture, role="user"):
         self.name = name
@@ -135,7 +141,7 @@ class TaskAssignment(db.Model):
     
     # Relationships
     task: Mapped["Task"] = relationship("Task", back_populates="assignments")
-    user: Mapped["User"] = relationship("User")
+    user: Mapped["User"] = relationship("User", back_populates="task_assignments")
 
 class Task(db.Model):
     __tablename__ = 'tasks'

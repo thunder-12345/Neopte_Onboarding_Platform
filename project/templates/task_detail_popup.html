@@ -3,8 +3,8 @@
 
 <div class="container mt-4">
     <!-- Back Button -->
-    <a href="{{ url_for('my_tasks') }}" class="btn btn-outline-secondary mb-3">
-        <i class="fas fa-arrow-left"></i> Back to My Tasks
+    <a href="{% if current_user.role in ['board', 'admin'] %}{{ url_for('task_status') }}{% else %}{{ url_for('my_tasks') }}{% endif %}" class="btn btn-outline-secondary mb-3">
+        <i class="fas fa-arrow-left"></i> Back
     </a>
 
     <!-- Task Detail Card (Large popup-style) -->
@@ -70,9 +70,9 @@
                             <h6 class="text-muted mb-2">
                                 <i class="fas fa-calendar-alt"></i> Due Date
                             </h6>
-                            <p class="fs-5 fw-bold {% if assignment.due_date.date() < now().date() and assignment.status == 'pending' %}text-danger{% else %}text-dark{% endif %}">
+                            <p class="fs-5 fw-bold {% if is_overdue and assignment.status == 'pending' %}text-danger{% else %}text-dark{% endif %}">
                                 {{ assignment.due_date.strftime('%B %d, %Y') }}
-                                {% if assignment.due_date.date() < now().date() and assignment.status == 'pending' %}
+                                {% if is_overdue and assignment.status == 'pending' %}
                                     <span class="badge bg-danger ms-2">Overdue</span>
                                 {% endif %}
                             </p>
@@ -134,8 +134,8 @@
 
                     <hr>
 
-                    <!-- Completion Form (only if status is "pending") -->
-                    {% if assignment.status == 'pending' %}
+                    <!-- VOLUNTEER VIEW: Completion Form (only if status is "pending") -->
+                    {% if assignment.status == 'pending' and current_user.id == assignment.user_id %}
                     <div class="bg-light p-4 rounded">
                         <h5 class="text-success mb-3">
                             <i class="fas fa-tasks"></i> Mark as Complete
@@ -188,8 +188,8 @@
                         </form>
                     </div>
 
-                    {% elif assignment.status == 'done' %}
-                    <!-- Already Submitted Message -->
+                    <!-- VOLUNTEER VIEW: Already Submitted Message -->
+                    {% elif assignment.status == 'done' and current_user.id == assignment.user_id %}
                     <div class="alert alert-info">
                         <h5 class="alert-heading">
                             <i class="fas fa-hourglass-half"></i> Submitted and Pending Review
@@ -199,8 +199,8 @@
                         </p>
                     </div>
 
-                    {% elif assignment.status == 'graded' %}
-                    <!-- Graded Message -->
+                    <!-- VOLUNTEER VIEW: Graded Message -->
+                    {% elif assignment.status == 'graded' and current_user.id == assignment.user_id %}
                     <div class="alert alert-success">
                         <h5 class="alert-heading">
                             <i class="fas fa-check-circle"></i> Task Graded!
@@ -215,6 +215,73 @@
                         </p>
                         {% endif %}
                     </div>
+
+                    <!-- BOARD/ADMIN VIEW: Grading Form (only if status is "done") -->
+                    {% elif assignment.status == 'done' and current_user.role in ['board', 'admin'] %}
+                    <div class="bg-warning bg-opacity-10 p-4 rounded border border-warning">
+                        <h5 class="text-warning mb-3">
+                            <i class="fas fa-star"></i> Grade This Task
+                        </h5>
+
+                        <form method="POST" action="{{ url_for('grade_task', assignment_id=assignment.id) }}">
+                            
+                            <!-- Student Info -->
+                            <div class="alert alert-secondary mb-3">
+                                <strong>Student:</strong> {{ assignment.user.name }}<br>
+                                <strong>Submitted:</strong> {{ assignment.due_date.strftime('%B %d, %Y') }}
+                            </div>
+
+                            <!-- Score Input -->
+                            <div class="mb-3">
+                                <label for="score" class="form-label fw-bold">
+                                    Score (Optional)
+                                </label>
+                                <input type="number" 
+                                       class="form-control" 
+                                       id="score" 
+                                       name="score" 
+                                       step="0.1" 
+                                       min="0" 
+                                       max="100"
+                                       placeholder="e.g., 95">
+                                <small class="form-text text-muted">
+                                    Enter a score out of 100, or leave blank.
+                                </small>
+                            </div>
+
+                            <!-- Feedback -->
+                            <div class="mb-3">
+                                <label for="feedback" class="form-label fw-bold">
+                                    Feedback (Optional)
+                                </label>
+                                <textarea 
+                                    class="form-control" 
+                                    id="feedback" 
+                                    name="feedback" 
+                                    rows="4"
+                                    placeholder="Provide feedback to the student..."></textarea>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-warning btn-lg">
+                                    <i class="fas fa-check"></i> 
+                                    Submit Grade & Mark as Complete
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- BOARD/ADMIN VIEW: Already Graded -->
+                    {% elif assignment.status == 'graded' and current_user.role in ['board', 'admin'] %}
+                    <div class="alert alert-success">
+                        <h5 class="alert-heading">
+                            <i class="fas fa-check-circle"></i> Task Already Graded
+                        </h5>
+                        <p class="mb-0">
+                            This task has been reviewed and graded.
+                        </p>
+                    </div>
                     {% endif %}
 
                 </div>
@@ -222,7 +289,7 @@
                 <!-- Footer with Close Button -->
                 <div class="card-footer bg-light">
                     <div class="d-grid">
-                        <a href="{{ url_for('my_tasks') }}" class="btn btn-outline-secondary">
+                        <a href="{% if current_user.role in ['board', 'admin'] %}{{ url_for('task_status') }}{% else %}{{ url_for('my_tasks') }}{% endif %}" class="btn btn-outline-secondary">
                             <i class="fas fa-times"></i> Close
                         </a>
                     </div>

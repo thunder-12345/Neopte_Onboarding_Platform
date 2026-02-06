@@ -50,6 +50,11 @@
         color: #334155;
     }
 
+    .section-header.pending-review {
+        background-color: #fff7ed;
+        border-bottom-color: #fed7aa;
+    }
+
     .section-header.overdue {
         background-color: #fef2f2;
         border-bottom-color: #fecaca;
@@ -82,7 +87,10 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        transition: background-color 0.2s;
+        transition: background-color 0.2s, transform 0.1s;
+        cursor: pointer;
+        text-decoration: none;
+        color: inherit;
     }
 
     .task-item:last-child {
@@ -91,6 +99,7 @@
 
     .task-item:hover {
         background-color: #f8fafc;
+        transform: translateX(4px);
     }
 
     .task-main {
@@ -124,6 +133,14 @@
     }
 
     .task-date {
+        color: #64748b;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .task-user {
         color: #64748b;
         font-size: 14px;
         display: flex;
@@ -292,6 +309,17 @@
         font-size: 13px;
         font-weight: 600;
     }
+
+    .view-icon {
+        opacity: 0;
+        transition: opacity 0.2s;
+        margin-left: 12px;
+        color: #3b82f6;
+    }
+
+    .task-item:hover .view-icon {
+        opacity: 1;
+    }
 </style>
 {% endblock %}
 
@@ -315,9 +343,12 @@
                 </div>
                 <ul class="task-list">
                     {% for assignment in overdue_tasks %}
-                    <li class="task-item">
+                    <a href="{{ url_for('view_task', assignment_id=assignment.id) }}" class="task-item">
                         <div class="task-main">
-                            <div class="task-title">{{ assignment.task.title }}</div>
+                            <div class="task-title">
+                                {{ assignment.task.title }}
+                                <span class="view-icon">→</span>
+                            </div>
                             <div class="task-meta">
                                 <span class="task-type">{{ assignment.task.classification.title() }}</span>
                                 <span class="task-date">
@@ -331,7 +362,7 @@
                             {% else %}status-pending{% endif %}">
                             {{ assignment.status.replace('_', ' ').title() }}
                         </span>
-                    </li>
+                    </a>
                     {% endfor %}
                 </ul>
             </div>
@@ -347,9 +378,12 @@
                 </div>
                 <ul class="task-list">
                     {% for assignment in this_week_tasks %}
-                    <li class="task-item">
+                    <a href="{{ url_for('view_task', assignment_id=assignment.id) }}" class="task-item">
                         <div class="task-main">
-                            <div class="task-title">{{ assignment.task.title }}</div>
+                            <div class="task-title">
+                                {{ assignment.task.title }}
+                                <span class="view-icon">→</span>
+                            </div>
                             <div class="task-meta">
                                 <span class="task-type">{{ assignment.task.classification.title() }}</span>
                                 <span class="task-date">
@@ -363,7 +397,7 @@
                             {% else %}status-pending{% endif %}">
                             {{ assignment.status.replace('_', ' ').title() }}
                         </span>
-                    </li>
+                    </a>
                     {% endfor %}
                 </ul>
             </div>
@@ -379,9 +413,12 @@
                 </div>
                 <ul class="task-list">
                     {% for assignment in next_week_tasks %}
-                    <li class="task-item">
+                    <a href="{{ url_for('view_task', assignment_id=assignment.id) }}" class="task-item">
                         <div class="task-main">
-                            <div class="task-title">{{ assignment.task.title }}</div>
+                            <div class="task-title">
+                                {{ assignment.task.title }}
+                                <span class="view-icon">→</span>
+                            </div>
                             <div class="task-meta">
                                 <span class="task-type">{{ assignment.task.classification.title() }}</span>
                                 <span class="task-date">
@@ -395,7 +432,7 @@
                             {% else %}status-pending{% endif %}">
                             {{ assignment.status.replace('_', ' ').title() }}
                         </span>
-                    </li>
+                    </a>
                     {% endfor %}
                 </ul>
             </div>
@@ -411,9 +448,12 @@
                 </div>
                 <ul class="task-list">
                     {% for assignment in later_tasks %}
-                    <li class="task-item">
+                    <a href="{{ url_for('view_task', assignment_id=assignment.id) }}" class="task-item">
                         <div class="task-main">
-                            <div class="task-title">{{ assignment.task.title }}</div>
+                            <div class="task-title">
+                                {{ assignment.task.title }}
+                                <span class="view-icon">→</span>
+                            </div>
                             <div class="task-meta">
                                 <span class="task-type">{{ assignment.task.classification.title() }}</span>
                                 <span class="task-date">
@@ -427,7 +467,7 @@
                             {% else %}status-pending{% endif %}">
                             {{ assignment.status.replace('_', ' ').title() }}
                         </span>
-                    </li>
+                    </a>
                     {% endfor %}
                 </ul>
             </div>
@@ -448,12 +488,59 @@
     <div class="tasks-container">
         <div class="page-header">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h1>👥 User Tasks</h1>
+                <h1>👥 Task Management</h1>
                 <a href="{{ url_for('create_task') }}" class="create-task-btn">+ Create New Task</a>
             </div>
         </div>
 
+        <!-- PENDING REVIEWS SECTION (tasks with status = "done") -->
+        {% set pending_review_tasks = [] %}
+        {% for user in users %}
+            {% for assignment in user.task_assignments %}
+                {% if assignment.status == 'done' %}
+                    {% set _ = pending_review_tasks.append(assignment) %}
+                {% endif %}
+            {% endfor %}
+        {% endfor %}
+
+        {% if pending_review_tasks %}
         <div class="section-card">
+            <div class="section-header pending-review">
+                <h2>⏳ Pending Reviews</h2>
+                <span class="badge-count">{{ pending_review_tasks|length }}</span>
+            </div>
+            <ul class="task-list">
+                {% for assignment in pending_review_tasks %}
+                <a href="{{ url_for('view_task', assignment_id=assignment.id) }}" class="task-item">
+                    <div class="task-main">
+                        <div class="task-title">
+                            {{ assignment.task.title }}
+                            <span class="view-icon">→ Review</span>
+                        </div>
+                        <div class="task-meta">
+                            <span class="task-type">{{ assignment.task.classification.title() }}</span>
+                            <span class="task-user">
+                                👤 {{ assignment.user.name }}
+                            </span>
+                            <span class="task-date">
+                                📅 Submitted: {{ assignment.due_date.strftime('%b %d, %Y') if assignment.due_date else 'No date' }}
+                            </span>
+                        </div>
+                    </div>
+                    <span class="task-status status-done">
+                        Needs Review
+                    </span>
+                </a>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <!-- USER CARDS SECTION -->
+        <div class="section-card">
+            <div class="section-header">
+                <h2>📋 View Tasks by User</h2>
+            </div>
             <div class="users-grid">
                 {% for user in users %}
                 <form action="{{ url_for('specific_user_tasks') }}" method="get">
