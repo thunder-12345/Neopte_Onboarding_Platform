@@ -38,59 +38,59 @@ def inject_now():
 # List of possible user roles
 roles = ["intern", "user", "volunteer", "board"]
 
-# # Generate 20 random users with different roles for initial data
-# users_data = []
-# for i in range(1, 21):
-#     name = f"User{i}"
-#     email = f"user{i}@example.com"
-#     password = f"pass{i}123"
-#     role = random.choice(roles)
-#     users_data.append({"name": name, "email": email, "password": password, "role": role})
+# Generate 20 random users with different roles for initial data
+users_data = []
+for i in range(1, 21):
+    name = f"User{i}"
+    email = f"user{i}@example.com"
+    password = f"pass{i}123"
+    role = random.choice(roles)
+    users_data.append({"name": name, "email": email, "password": password, "role": role})
 
-# # Create admin and real admin users if they don't exist, and add generated users to the database
-# with app.app_context():
-#     admin = User.query.filter_by(email="admin@example.com").first()
-#     if not admin:
-#         admin = User(
-#             name="Admin User",
-#             email="admin@example.com",
-#             password="admin123",   # password hashed in User model
-#             picture="default.jpeg",
-#             role="board"
-#         )
-#         print(admin.role)
-#         db.session.add(admin)
-#         db.session.commit()
-#         print("Admin user created: admin@example.com / admin123")
+# Create admin and real admin users if they don't exist, and add generated users to the database
+with app.app_context():
+    admin = User.query.filter_by(email="admin@example.com").first()
+    if not admin:
+        admin = User(
+            name="Admin User",
+            email="admin@example.com",
+            password="admin123",   # password hashed in User model
+            picture="default.jpeg",
+            role="board"
+        )
+        print(admin.role)
+        db.session.add(admin)
+        db.session.commit()
+        print("Admin user created: admin@example.com / admin123")
 
-#     realAdmin = User.query.filter_by(email="realadmin@gmail.com").first()
-#     if not realAdmin:
-#         realAdmin = User(
-#             name="REAL ADMIN",
-#             email="realadmin@gmail.com",
-#             password="admin123",   # password hashed in User model
-#             role="admin",
-#             picture="default.jpeg"
-#         )
-#         print(realAdmin.role)
-#         db.session.add(realAdmin)
-#         db.session.commit()
-#         print("realAdmin user created: realadmin@gmail.com / admin123")
+    realAdmin = User.query.filter_by(email="realadmin@gmail.com").first()
+    if not realAdmin:
+        realAdmin = User(
+            name="REAL ADMIN",
+            email="realadmin@gmail.com",
+            password="admin123",   # password hashed in User model
+            role="admin",
+            picture="default.jpeg"
+        )
+        print(realAdmin.role)
+        db.session.add(realAdmin)
+        db.session.commit()
+        print("realAdmin user created: realadmin@gmail.com / admin123")
 
-#     for u in users_data:
-#         # Avoid duplicates
-#         if not User.query.filter_by(email=u["email"]).first():
-#             user = User(
-#                 name=u["name"],
-#                 email=u["email"],
-#                 password=u["password"],
-#                 picture="default.jpeg",
-#                 role=u["role"], 
-#             )
-#             db.session.add(user)
-#             print(f"Adding {u['name']} ({u['role']})")
-#     db.session.commit()
-#     print("20 users added successfully!")
+    for u in users_data:
+        # Avoid duplicates
+        if not User.query.filter_by(email=u["email"]).first():
+            user = User(
+                name=u["name"],
+                email=u["email"],
+                password=u["password"],
+                picture="default.jpeg",
+                role=u["role"], 
+            )
+            db.session.add(user)
+            print(f"Adding {u['name']} ({u['role']})")
+    db.session.commit()
+    print("20 users added successfully!")
 
 # Route to upgrade a user's role (accessible by board and admin roles)
 @app.route("/upgrade/user", methods=["POST"])
