@@ -82,7 +82,7 @@
                         <!-- Task Classification (Project or Reminder) -->
                         <div class="mb-3">
                             {{ form.classification.label(class="form-label fw-bold") }}
-                            {{ form.classification(class="form-select") }}
+                            {{ form.classification(class="form-select", id="classificationSelect") }}
                             {% if form.classification.errors %}
                                 <div class="text-danger mt-1">
                                     {% for error in form.classification.errors %}
@@ -109,6 +109,59 @@
                             <small class="form-text text-muted">
                                 Select a role to assign to all users in that role, or choose "Specific Users" to select individuals.
                             </small>
+                        </div>
+
+                        <!-- ============================================================ -->
+                        <!-- RECURRING REMINDER SECTION (only visible for reminders) -->
+                        <!-- ============================================================ -->
+                        <div id="recurringSection" style="display: none;">
+                            <hr class="my-4">
+                            <h5 class="mb-3 text-info">
+                                <i class="fas fa-redo"></i> Recurring Reminder Options
+                            </h5>
+
+                            <!-- Is Recurring Checkbox -->
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    {{ form.is_recurring(class="form-check-input", id="isRecurringCheck") }}
+                                    {{ form.is_recurring.label(class="form-check-label", for="isRecurringCheck") }}
+                                </div>
+                                <small class="form-text text-muted">
+                                    Enable this to create multiple reminder assignments at regular intervals.
+                                </small>
+                            </div>
+
+                            <!-- Recurrence Details (only visible when is_recurring is checked) -->
+                            <div id="recurrenceDetails" style="display: none;">
+                                <!-- Frequency -->
+                                <div class="mb-3">
+                                    {{ form.recurrence_frequency.label(class="form-label fw-bold") }}
+                                    {{ form.recurrence_frequency(class="form-select") }}
+                                    <small class="form-text text-muted">
+                                        How often should this reminder repeat?
+                                    </small>
+                                </div>
+
+                                <!-- End Date -->
+                                <div class="mb-3">
+                                    {{ form.recurrence_end_date.label(class="form-label fw-bold") }}
+                                    {{ form.recurrence_end_date(class="form-control", type="date") }}
+                                    <small class="form-text text-muted">
+                                        The last date on which this reminder should be assigned.
+                                    </small>
+                                </div>
+                            </div>
+
+                            <!-- Skip Review Checkbox -->
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    {{ form.skip_review(class="form-check-input", id="skipReviewCheck") }}
+                                    {{ form.skip_review.label(class="form-check-label", for="skipReviewCheck") }}
+                                </div>
+                                <small class="form-text text-muted">
+                                    When enabled, this reminder will automatically be marked as complete (graded) when users mark it as done, skipping the board review process.
+                                </small>
+                            </div>
                         </div>
 
                         <!-- Submit Button -->
@@ -138,6 +191,12 @@
                             {% elif task.assigned_role == 'specific' %}
                                 Specific Users (select below)
                             {% endif %}
+                            {% if task.is_recurring %}
+                                <br><strong>Recurring:</strong> {{ task.recurrence_frequency|title }} until {{ task.recurrence_end_date.strftime('%b %d, %Y') if task.recurrence_end_date else 'indefinitely' }}
+                            {% endif %}
+                            {% if task.skip_review %}
+                                <br><strong>Review:</strong> <span class="badge bg-info">Skip Review (Auto-Complete)</span>
+                            {% endif %}
                         </p>
                     </div>
 
@@ -156,6 +215,11 @@
                                         <small>{{ error }}</small><br>
                                     {% endfor %}
                                 </div>
+                            {% endif %}
+                            {% if task.is_recurring %}
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-info-circle"></i> This is the <strong>first occurrence</strong> due date. Subsequent assignments will be created based on the recurrence frequency.
+                                </small>
                             {% endif %}
                         </div>
 
@@ -211,6 +275,9 @@
                                         </ul>
                                         <div class="mt-2">
                                             <span class="badge bg-primary">{{ users|length }} user{% if users|length != 1 %}s{% endif %}</span>
+                                            {% if task.is_recurring %}
+                                                <span class="badge bg-info">× Multiple occurrences</span>
+                                            {% endif %}
                                         </div>
                                     {% else %}
                                         <p class="text-muted mb-0">
@@ -250,5 +317,55 @@
         </div>
     </div>
 </div>
+
+<!-- JavaScript to toggle recurring section based on classification -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const classificationSelect = document.getElementById('classificationSelect');
+    const recurringSection = document.getElementById('recurringSection');
+    const isRecurringCheck = document.getElementById('isRecurringCheck');
+    const recurrenceDetails = document.getElementById('recurrenceDetails');
+    
+    // Toggle recurring section based on classification
+    function toggleRecurringSection() {
+        if (classificationSelect && recurringSection) {
+            if (classificationSelect.value === 'reminder') {
+                recurringSection.style.display = 'block';
+            } else {
+                recurringSection.style.display = 'none';
+                // Also uncheck recurring if switching away from reminder
+                if (isRecurringCheck) {
+                    isRecurringCheck.checked = false;
+                    recurrenceDetails.style.display = 'none';
+                }
+            }
+        }
+    }
+    
+    // Toggle recurrence details based on is_recurring checkbox
+    function toggleRecurrenceDetails() {
+        if (isRecurringCheck && recurrenceDetails) {
+            if (isRecurringCheck.checked) {
+                recurrenceDetails.style.display = 'block';
+            } else {
+                recurrenceDetails.style.display = 'none';
+            }
+        }
+    }
+    
+    // Add event listeners
+    if (classificationSelect) {
+        classificationSelect.addEventListener('change', toggleRecurringSection);
+        // Call once on page load to set initial state
+        toggleRecurringSection();
+    }
+    
+    if (isRecurringCheck) {
+        isRecurringCheck.addEventListener('change', toggleRecurrenceDetails);
+        // Call once on page load to set initial state
+        toggleRecurrenceDetails();
+    }
+});
+</script>
 
 {% endblock %}

@@ -43,47 +43,252 @@
     <!-- Tab Content -->
     <div class="tab-content" id="taskTabsContent">
         
-        <!-- TO DO TASKS (status = "pending") -->
+        <!-- TO DO TASKS (status = "pending") - ORGANIZED BY DUE DATE -->
         <div class="tab-pane fade show active" id="assigned" role="tabpanel">
             {% if assigned %}
-                <div class="row">
-                    {% for assignment in assigned %}
-                        {% set task = assignment.task %}
-                        <div class="col-md-6 col-lg-4 mb-4">
-                            <div class="card h-100 shadow-sm task-card {% if assignment.due_date.date() < now().date() %}border-danger{% endif %}">
-                                <div class="card-header {% if task.classification == 'project' %}bg-primary text-white{% else %}bg-info text-white{% endif %}">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <h6 class="mb-0">
-                                            <i class="fas {% if task.classification == 'project' %}fa-project-diagram{% else %}fa-bell{% endif %}"></i>
-                                            {{ task.classification|title }}
-                                        </h6>
-                                        {% if assignment.upload %}
-                                            <i class="fas fa-upload" title="Upload Required"></i>
-                                        {% endif %}
+
+                <!-- PAST DUE SECTION -->
+                {% if overdue_tasks %}
+                <div class="mb-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <h4 class="text-danger mb-0">
+                            <i class="fas fa-exclamation-triangle"></i> Past Due
+                        </h4>
+                        <span class="badge bg-danger ms-2">{{ overdue_tasks|length }}</span>
+                    </div>
+                    <div class="row">
+                        {% for assignment in overdue_tasks %}
+                            {% set task = assignment.task %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card h-100 shadow-sm task-card border-danger">
+                                    <div class="card-header bg-danger text-white">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-0">
+                                                <i class="fas {% if task.classification == 'project' %}fa-project-diagram{% else %}fa-bell{% endif %}"></i>
+                                                {{ task.classification|title }}
+                                            </h6>
+                                            {% if assignment.upload %}
+                                                <i class="fas fa-upload" title="Upload Required"></i>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <h5 class="card-title">{{ task.title }}</h5>
+                                        <p class="card-text text-muted small">
+                                            {{ task.description[:100] }}{% if task.description|length > 100 %}...{% endif %}
+                                        </p>
+                                        <p class="mb-1">
+                                            <i class="fas fa-calendar-alt text-danger"></i> 
+                                            <strong>Was Due:</strong> {{ assignment.due_date.strftime('%b %d, %Y') }}
+                                        </p>
+                                        <p class="mb-0">
+                                            <small class="text-danger fw-bold">
+                                                <i class="fas fa-clock"></i> 
+                                                {% set days_overdue = (today - assignment.due_date.date()).days %}
+                                                {{ days_overdue }} day{% if days_overdue != 1 %}s{% endif %} overdue
+                                            </small>
+                                        </p>
+                                    </div>
+                                    <div class="card-footer bg-transparent">
+                                        <a href="{{ url_for('view_task', assignment_id=assignment.id) }}" class="btn btn-danger btn-sm w-100">
+                                            <i class="fas fa-eye"></i> View & Complete Now
+                                        </a>
                                     </div>
                                 </div>
-                                <div class="card-body">
-                                    <h5 class="card-title">{{ task.title }}</h5>
-                                    <p class="card-text text-muted small">
-                                        {{ task.description[:100] }}{% if task.description|length > 100 %}...{% endif %}
-                                    </p>
-                                    <p class="mb-1">
-                                        <i class="fas fa-calendar-alt"></i> 
-                                        <strong>Due:</strong> {{ assignment.due_date.strftime('%b %d, %Y') }}
-                                        {% if assignment.due_date.date() < now().date() %}
-                                            <span class="badge bg-danger ms-1">Overdue</span>
-                                        {% endif %}
-                                    </p>
-                                </div>
-                                <div class="card-footer bg-transparent">
-                                    <a href="{{ url_for('view_task', assignment_id=assignment.id) }}" class="btn btn-primary btn-sm w-100">
-                                        <i class="fas fa-eye"></i> View & Complete
-                                    </a>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- DUE TODAY SECTION -->
+                {% if today_tasks %}
+                <div class="mb-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <h4 class="text-warning mb-0">
+                            <i class="fas fa-calendar-day"></i> Due Today
+                        </h4>
+                        <span class="badge bg-warning text-dark ms-2">{{ today_tasks|length }}</span>
+                    </div>
+                    <div class="row">
+                        {% for assignment in today_tasks %}
+                            {% set task = assignment.task %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card h-100 shadow-sm task-card border-warning">
+                                    <div class="card-header bg-warning text-dark">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-0">
+                                                <i class="fas {% if task.classification == 'project' %}fa-project-diagram{% else %}fa-bell{% endif %}"></i>
+                                                {{ task.classification|title }}
+                                            </h6>
+                                            {% if assignment.upload %}
+                                                <i class="fas fa-upload" title="Upload Required"></i>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <h5 class="card-title">{{ task.title }}</h5>
+                                        <p class="card-text text-muted small">
+                                            {{ task.description[:100] }}{% if task.description|length > 100 %}...{% endif %}
+                                        </p>
+                                        <p class="mb-0">
+                                            <i class="fas fa-calendar-check text-warning"></i> 
+                                            <strong>Due:</strong> Today
+                                        </p>
+                                    </div>
+                                    <div class="card-footer bg-transparent">
+                                        <a href="{{ url_for('view_task', assignment_id=assignment.id) }}" class="btn btn-warning btn-sm w-100">
+                                            <i class="fas fa-eye"></i> View & Complete
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    {% endfor %}
+                        {% endfor %}
+                    </div>
                 </div>
+                {% endif %}
+
+                <!-- DUE THIS WEEK SECTION -->
+                {% if this_week_tasks %}
+                <div class="mb-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <h4 class="text-primary mb-0">
+                            <i class="fas fa-calendar-week"></i> Due This Week
+                        </h4>
+                        <span class="badge bg-primary ms-2">{{ this_week_tasks|length }}</span>
+                    </div>
+                    <div class="row">
+                        {% for assignment in this_week_tasks %}
+                            {% set task = assignment.task %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card h-100 shadow-sm task-card">
+                                    <div class="card-header {% if task.classification == 'project' %}bg-primary text-white{% else %}bg-info text-white{% endif %}">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-0">
+                                                <i class="fas {% if task.classification == 'project' %}fa-project-diagram{% else %}fa-bell{% endif %}"></i>
+                                                {{ task.classification|title }}
+                                            </h6>
+                                            {% if assignment.upload %}
+                                                <i class="fas fa-upload" title="Upload Required"></i>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <h5 class="card-title">{{ task.title }}</h5>
+                                        <p class="card-text text-muted small">
+                                            {{ task.description[:100] }}{% if task.description|length > 100 %}...{% endif %}
+                                        </p>
+                                        <p class="mb-0">
+                                            <i class="fas fa-calendar-alt"></i> 
+                                            <strong>Due:</strong> {{ assignment.due_date.strftime('%A, %b %d') }}
+                                        </p>
+                                    </div>
+                                    <div class="card-footer bg-transparent">
+                                        <a href="{{ url_for('view_task', assignment_id=assignment.id) }}" class="btn btn-primary btn-sm w-100">
+                                            <i class="fas fa-eye"></i> View & Complete
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- DUE NEXT WEEK SECTION -->
+                {% if next_week_tasks %}
+                <div class="mb-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <h4 class="text-success mb-0">
+                            <i class="fas fa-calendar-plus"></i> Due Next Week
+                        </h4>
+                        <span class="badge bg-success ms-2">{{ next_week_tasks|length }}</span>
+                    </div>
+                    <div class="row">
+                        {% for assignment in next_week_tasks %}
+                            {% set task = assignment.task %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card h-100 shadow-sm task-card">
+                                    <div class="card-header {% if task.classification == 'project' %}bg-primary text-white{% else %}bg-info text-white{% endif %}">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-0">
+                                                <i class="fas {% if task.classification == 'project' %}fa-project-diagram{% else %}fa-bell{% endif %}"></i>
+                                                {{ task.classification|title }}
+                                            </h6>
+                                            {% if assignment.upload %}
+                                                <i class="fas fa-upload" title="Upload Required"></i>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <h5 class="card-title">{{ task.title }}</h5>
+                                        <p class="card-text text-muted small">
+                                            {{ task.description[:100] }}{% if task.description|length > 100 %}...{% endif %}
+                                        </p>
+                                        <p class="mb-0">
+                                            <i class="fas fa-calendar-alt"></i> 
+                                            <strong>Due:</strong> {{ assignment.due_date.strftime('%A, %b %d') }}
+                                        </p>
+                                    </div>
+                                    <div class="card-footer bg-transparent">
+                                        <a href="{{ url_for('view_task', assignment_id=assignment.id) }}" class="btn btn-outline-success btn-sm w-100">
+                                            <i class="fas fa-eye"></i> View Details
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- DUE LATER SECTION -->
+                {% if later_tasks %}
+                <div class="mb-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <h4 class="text-secondary mb-0">
+                            <i class="fas fa-calendar"></i> Due Later
+                        </h4>
+                        <span class="badge bg-secondary ms-2">{{ later_tasks|length }}</span>
+                    </div>
+                    <div class="row">
+                        {% for assignment in later_tasks %}
+                            {% set task = assignment.task %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card h-100 shadow-sm task-card">
+                                    <div class="card-header {% if task.classification == 'project' %}bg-primary text-white{% else %}bg-info text-white{% endif %}">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-0">
+                                                <i class="fas {% if task.classification == 'project' %}fa-project-diagram{% else %}fa-bell{% endif %}"></i>
+                                                {{ task.classification|title }}
+                                            </h6>
+                                            {% if assignment.upload %}
+                                                <i class="fas fa-upload" title="Upload Required"></i>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <h5 class="card-title">{{ task.title }}</h5>
+                                        <p class="card-text text-muted small">
+                                            {{ task.description[:100] }}{% if task.description|length > 100 %}...{% endif %}
+                                        </p>
+                                        <p class="mb-0">
+                                            <i class="fas fa-calendar-alt"></i> 
+                                            <strong>Due:</strong> {{ assignment.due_date.strftime('%b %d, %Y') if assignment.due_date else 'No date set' }}
+                                        </p>
+                                    </div>
+                                    <div class="card-footer bg-transparent">
+                                        <a href="{{ url_for('view_task', assignment_id=assignment.id) }}" class="btn btn-outline-secondary btn-sm w-100">
+                                            <i class="fas fa-eye"></i> View Details
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
             {% else %}
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle"></i> No tasks to do right now. Great job staying on top of things!

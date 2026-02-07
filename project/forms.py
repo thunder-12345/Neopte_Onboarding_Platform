@@ -82,6 +82,39 @@ class CreateTasksForm(FlaskForm):
         validators=[DataRequired(message="Please select who to assign this to")]
     )
     
+    # ========================================================================
+    # RECURRING FIELDS (only shown for reminders)
+    # ========================================================================
+    is_recurring = BooleanField(
+        'Make this a recurring reminder',
+        default=False
+    )
+    
+    recurrence_frequency = SelectField(
+        'Recurrence Frequency',
+        choices=[
+            ('', '-- Select Frequency --'),
+            ('daily', 'Daily'),
+            ('weekly', 'Weekly'),
+            ('biweekly', 'Every 2 Weeks'),
+            ('monthly', 'Monthly')
+        ],
+        validators=[Optional()]
+    )
+    
+    recurrence_end_date = DateField(
+        'Stop recurring after', 
+        validators=[Optional()]
+    )
+    
+    # ========================================================================
+    # SKIP REVIEW OPTION (only for reminders)
+    # ========================================================================
+    skip_review = BooleanField(
+        'Skip review process (auto-complete when user marks as done)',
+        default=False
+    )
+    
     submit = SubmitField('Continue to Assignment')
 
 
@@ -112,5 +145,3 @@ class CreateTaskAssignmentForm(FlaskForm):
     )
     
     submit = SubmitField('Complete Task Creation')
-
-    

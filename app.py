@@ -16,7 +16,9 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.units import inch
 from reportlab.lib import colors
 import io
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
+
+from dateutil.relativedelta import relativedelta
 
 # Mapping user roles to their dashboard route names
 redirect_target = {
@@ -845,6 +847,14 @@ def download_certificate():
 def policies():
     return render_template("policies.html")
 
+# ============================================================================
+# UPDATED CREATE TASK ROUTE WITH RECURRING SUPPORT
+# Add this to replace your existing create_task route (around line 848)
+# ============================================================================
+
+from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
+
 @app.route("/create/task", methods=["GET", "POST"])
 @login_required
 @permission_required('board')
@@ -856,13 +866,32 @@ def create_task():
         form = CreateTasksForm()
         
         if request.method == "POST" and form.validate_on_submit():
-            # Create the task with selected classification and assigned_role
+            # Validate recurring fields if it's a recurring reminder
+            is_recurring = form.data.get('is_recurring', False)
+            classification = form.data['classification']
+            
+            if is_recurring and classification == 'reminder':
+                # Make sure frequency and end date are provided
+                if not form.data.get('recurrence_frequency'):
+                    flash("Please select a recurrence frequency for recurring reminders.")
+                    return render_template("create_task.html", form=form, step=1)
+                if not form.data.get('recurrence_end_date'):
+                    flash("Please select an end date for recurring reminders.")
+                    return render_template("create_task.html", form=form, step=1)
+            
+            # Create the task with all new fields
             task = Task(
-                classification=form.data['classification'],  # First parameter
-                title=form.data['title'],                    # Second parameter
-                description=form.data['description'],        # Third parameter
-                created_by=current_user.id,                  # Fourth parameter (INTEGER)
-                assigned_role=form.data['assigned_role']     # Fifth parameter
+                classification=form.data['classification'],
+                title=form.data['title'],
+                description=form.data['description'],
+                created_by=current_user.id,
+                assigned_role=form.data['assigned_role'],
+                # NEW RECURRING FIELDS
+                is_recurring=is_recurring if classification == 'reminder' else False,
+                recurrence_frequency=form.data.get('recurrence_frequency') if is_recurring else None,
+                recurrence_end_date=form.data.get('recurrence_end_date') if is_recurring else None,
+                # NEW SKIP REVIEW FIELD
+                skip_review=form.data.get('skip_review', False) if classification == 'reminder' else False
             )
             db.session.add(task)
             db.session.commit()
@@ -875,7 +904,9 @@ def create_task():
                 details={
                     "title": task.title,
                     "classification": task.classification,
-                    "assigned_role": task.assigned_role
+                    "assigned_role": task.assigned_role,
+                    "is_recurring": task.is_recurring,
+                    "skip_review": task.skip_review
                 }
             )
             db.session.commit()
@@ -905,12 +936,9 @@ def create_task():
         
         # Get users based on assigned_role
         if assigned_role in ['intern', 'volunteer', 'board']:
-            # Get users with that specific role (for read-only display)
             users = User.query.filter_by(role=assigned_role).all()
         elif assigned_role == 'specific':
-            # Get ALL users for the multi-select dropdown
             users = User.query.all()
-            # Populate the dropdown choices
             form2.users_selected.choices = [(u.id, f"{u.name} ({u.email})") for u in users]
         else:
             users = []
@@ -919,29 +947,14 @@ def create_task():
             due_date = form2.data['due_date']
             upload_required = form2.data['upload_required']
             
+            # Determine which users to assign to
             if assigned_role in ['intern', 'volunteer', 'board']:
-                # Assign to ALL users with that role
                 users_to_assign = User.query.filter_by(role=assigned_role).all()
-                
-                for user in users_to_assign:
-                    # Create empty object
-                        assignment = TaskAssignment()
-
-                        # Set fields individually
-                        assignment.task_id = task.id
-                        assignment.user_id = user.id
-                        assignment.due_date = due_date
-                        assignment.upload = upload_required
-
-                        # Add to database
-                        db.session.add(assignment)
-            
             elif assigned_role == 'specific':
-                # Assign to SELECTED users only
                 user_ids = form2.users_selected.data
-                users_selected = User.query.filter(User.id.in_(user_ids)).all()
+                users_to_assign = User.query.filter(User.id.in_(user_ids)).all()
                 
-                if not users_selected:
+                if not users_to_assign:
                     flash("Please select at least one user to assign the task to.")
                     return render_template("create_task.html", 
                                          form2=form2, 
@@ -949,15 +962,58 @@ def create_task():
                                          task=task, 
                                          users=users,
                                          assigned_role=assigned_role)
+            else:
+                users_to_assign = []
+            
+            # =====================================================================
+            # CREATE ASSIGNMENTS (with recurring support)
+            # =====================================================================
+            
+            if task.is_recurring:
+                # Generate multiple assignments based on recurrence
+                assignment_dates = []
+                current_due_date = due_date
                 
-                for user in users_selected:
-                    assignment = TaskAssignment(
-                        task=task,
-                        user=user,
-                        due_date=due_date,
-                        upload=upload_required
-                    )
+                # Generate due dates until recurrence_end_date
+                while current_due_date <= task.recurrence_end_date:
+                    assignment_dates.append(current_due_date)
+                    
+                    # Calculate next occurrence based on frequency
+                    if task.recurrence_frequency == 'daily':
+                        current_due_date = current_due_date + timedelta(days=1)
+                    elif task.recurrence_frequency == 'weekly':
+                        current_due_date = current_due_date + timedelta(weeks=1)
+                    elif task.recurrence_frequency == 'biweekly':
+                        current_due_date = current_due_date + timedelta(weeks=2)
+                    elif task.recurrence_frequency == 'monthly':
+                        # Use relativedelta for accurate month addition
+                        current_due_date = current_due_date + relativedelta(months=1)
+                    else:
+                        break  # Unknown frequency
+                
+                # Create assignments for each user and each date
+                for user in users_to_assign:
+                    for assignment_date in assignment_dates:
+                        assignment = TaskAssignment()
+                        assignment.task_id = task.id
+                        assignment.user_id = user.id
+                        assignment.due_date = datetime.combine(assignment_date, datetime.min.time())
+                        assignment.upload = upload_required
+                        db.session.add(assignment)
+                
+                flash(f"Recurring task created with {len(assignment_dates)} occurrences for {len(users_to_assign)} user(s)!")
+            
+            else:
+                # Single assignment (non-recurring)
+                for user in users_to_assign:
+                    assignment = TaskAssignment()
+                    assignment.task_id = task.id
+                    assignment.user_id = user.id
+                    assignment.due_date = datetime.combine(due_date, datetime.min.time())
+                    assignment.upload = upload_required
                     db.session.add(assignment)
+                
+                flash(f"Task assigned to {len(users_to_assign)} user(s)!")
             
             db.session.commit()
             
@@ -965,7 +1021,6 @@ def create_task():
             session.pop('task_id', None)
             session.pop('assigned_role', None)
             
-            flash(f"Task has been created and assigned successfully!")
             return redirect(url_for('create_task'))
         
         return render_template("create_task.html", 
@@ -994,9 +1049,6 @@ def cancel_task_creation():
     session.pop('assigned_role', None)
     
     return redirect(url_for('create_task'))
-
-# Python route handler
-from datetime import datetime, timedelta
 
 # Replace your task_status route with this:
 
@@ -1143,14 +1195,15 @@ def view_task(assignment_id):
 # ============================================================================
 # MARK TASK AS COMPLETE (Volunteer submits completion)
 # ============================================================================
+
 @app.route("/task/complete/<int:assignment_id>", methods=["POST"])
 @login_required
 @permission_required('volunteer')
 def complete_task(assignment_id):
     """
     Volunteer marks task as complete.
-    If upload=True, they must upload a file.
-    Status changes to "done" and waits for board to grade it.
+    If task.skip_review is True (for reminders), auto-grade it.
+    Otherwise, status changes to "done" and waits for board to grade it.
     """
     assignment = TaskAssignment.query.get_or_404(assignment_id)
     
@@ -1162,7 +1215,7 @@ def complete_task(assignment_id):
     task = assignment.task
     
     # Handle file upload if required
-    if assignment.upload:  # Using your existing 'upload' field (boolean)
+    if assignment.upload:
         uploaded_file = request.files.get('completion_file')
         
         if not uploaded_file or not uploaded_file.filename:
@@ -1175,36 +1228,54 @@ def complete_task(assignment_id):
         
         # Save the file
         filename = secure_filename(uploaded_file.filename)
-        # Make filename unique by adding assignment ID
         unique_filename = f"task_{assignment.id}_{filename}"
         uploaded_file.save(os.path.join(app.config['UPLOAD_PATH'], unique_filename))
         
-        # Store filename in assignment (using your existing 'filename' field)
         assignment.filename = unique_filename
     
-    # Get completion comments (using your existing 'comments' field)
+    # Get completion comments
     completion_comments = request.form.get('completion_comments', '')
     if completion_comments:
         assignment.comments = completion_comments
     
-    # Mark as done (using your existing status field)
-    # Status progression: "pending" -> "done" -> "graded" (after board reviews)
-    assignment.status = "done"
-    
-    log_event(
-        actor=current_user,
-        action="task_completed",
-        target_type="TaskAssignment",
-        target_id=assignment.id,
-        details={
-            "task_title": task.title,
-            "upload_required": assignment.upload
-        }
-    )
+    # =====================================================================
+    # SKIP REVIEW LOGIC FOR REMINDERS
+    # =====================================================================
+    if task.skip_review:
+        # Auto-complete without board review
+        assignment.status = "graded"
+        
+        log_event(
+            actor=current_user,
+            action="task_auto_completed",
+            target_type="TaskAssignment",
+            target_id=assignment.id,
+            details={
+                "task_title": task.title,
+                "skip_review": True
+            }
+        )
+    else:
+        # Normal flow: wait for board review
+        assignment.status = "done"
+        flash_message = f"'{task.title}' submitted for review!"
+        
+        log_event(
+            actor=current_user,
+            action="task_completed",
+            target_type="TaskAssignment",
+            target_id=assignment.id,
+            details={
+                "task_title": task.title,
+                "upload_required": assignment.upload
+            }
+        )
     
     db.session.commit()
-
+    flash(flash_message)
+    
     return redirect(url_for('my_tasks'))
+
 
 # ============================================================================
 # PENDING TASKS (Board/Admin review page)
@@ -1282,22 +1353,63 @@ def grade_task(assignment_id):
 def my_tasks():
     """
     Shows all tasks assigned to the current user.
+    Organized by status with date-based sorting for To Do tasks.
     """
+    from datetime import datetime, timedelta
+    
     # Get all task assignments for this user
     assignments = TaskAssignment.query.filter_by(user_id=current_user.id).all()
     
     # Organize by status
-    # "pending" = not started yet
-    # "done" = submitted, waiting for grading
-    # "graded" = completed and graded by board
     assigned_tasks = [a for a in assignments if a.status == "pending"]
     pending_review = [a for a in assignments if a.status == "done"]
     completed_tasks = [a for a in assignments if a.status == "graded"]
     
+    # ========================================================================
+    # CATEGORIZE "TO DO" TASKS BY DUE DATE
+    # ========================================================================
+    today = datetime.now().date()
+    week_start = today - timedelta(days=today.weekday())  # Monday of current week
+    week_end = week_start + timedelta(days=6)  # Sunday of current week
+    next_week_start = week_end + timedelta(days=1)  # Monday of next week
+    next_week_end = next_week_start + timedelta(days=6)  # Sunday of next week
+    
+    overdue_tasks = []
+    today_tasks = []
+    this_week_tasks = []
+    next_week_tasks = []
+    later_tasks = []
+    
+    for assignment in assigned_tasks:
+        due_date = assignment.due_date.date() if assignment.due_date else None
+        
+        if due_date:
+            if due_date < today:
+                overdue_tasks.append(assignment)
+            elif due_date == today:
+                today_tasks.append(assignment)
+            elif week_start <= due_date <= week_end:
+                this_week_tasks.append(assignment)
+            elif next_week_start <= due_date <= next_week_end:
+                next_week_tasks.append(assignment)
+            else:
+                later_tasks.append(assignment)
+        else:
+            # Tasks with no due date go to "later"
+            later_tasks.append(assignment)
+    
     return render_template("my_tasks.html",
                          assigned=assigned_tasks,
                          pending=pending_review,
-                         completed=completed_tasks)
+                         completed=completed_tasks,
+                         # Pass categorized tasks
+                         overdue_tasks=overdue_tasks,
+                         today_tasks=today_tasks,
+                         this_week_tasks=this_week_tasks,
+                         next_week_tasks=next_week_tasks,
+                         later_tasks=later_tasks,
+                         # Pass today's date for calculations in template
+                         today=today)
 
 @app.route('/task/file/view/<int:assignment_id>')
 @login_required
@@ -1675,7 +1787,6 @@ def download_grades_report():
         as_attachment=True,  # True = force download
         download_name=f'neopte_grades_report_{user.name.replace(" ", "_")}.pdf'
     )
-
 
 # Run the app if this file is executed directly
 if __name__ == "__main__": 

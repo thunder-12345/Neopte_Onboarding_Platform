@@ -155,7 +155,19 @@ class Task(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # ========================================================================
-    # ADD THIS RELATIONSHIP TO ACCESS CREATOR INFO
+    # RECURRING TASK FIELDS (for reminders)
+    # ========================================================================
+    is_recurring = db.Column(db.Boolean, default=False)  # Whether this is a recurring reminder
+    recurrence_frequency = db.Column(db.String(50), nullable=True)  # 'daily', 'weekly', 'biweekly', 'monthly'
+    recurrence_end_date = db.Column(db.Date, nullable=True)  # When to stop creating new assignments
+    
+    # ========================================================================
+    # SKIP REVIEW OPTION (for reminders)
+    # ========================================================================
+    skip_review = db.Column(db.Boolean, default=False)  # If True, reminder goes straight to 'graded' when completed
+    
+    # ========================================================================
+    # RELATIONSHIP TO ACCESS CREATOR INFO
     # ========================================================================
     created_by_user = db.relationship('User', foreign_keys=[created_by], backref='created_tasks', lazy=True)
     assignments: Mapped[List["TaskAssignment"]] = relationship(
