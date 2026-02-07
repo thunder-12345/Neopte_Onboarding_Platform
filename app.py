@@ -932,7 +932,7 @@ def create_task():
                         assignment.task_id = task.id
                         assignment.user_id = user.id
                         assignment.due_date = due_date
-                        assignment.upload_required = upload_required
+                        assignment.upload = upload_required
 
                         # Add to database
                         db.session.add(assignment)
@@ -1274,7 +1274,6 @@ def grade_task(assignment_id):
     
     db.session.commit()
     
-    flash(f"Task graded successfully.")
     return redirect(request.referrer or url_for('pending_tasks'))
 
 
@@ -1303,6 +1302,100 @@ def my_tasks():
                          assigned=assigned_tasks,
                          pending=pending_review,
                          completed=completed_tasks)
+
+"""
+Add these routes to your app.py file to enable task file downloads
+This follows the same pattern as your existing document download functionality
+
+IMPORTANT: The URLs are /task/file/view and /task/file/download to avoid 
+conflict with your existing /task/view route
+"""
+
+from flask import send_file, abort
+import os
+
+# Add these routes to your app.py (place them near your other task routes)
+
+@app.route('/task/file/view/<int:assignment_id>')
+@login_required
+def view_task_file(assignment_id):
+    """
+    View a task assignment file in browser (for PDFs and images)
+    - Users can view their own task files
+    - Board/admin members can view any task files
+    """
+    assignment = TaskAssignment.query.get_or_404(assignment_id)
+    
+    # Security check
+    if current_user.id != assignment.user_id and current_user.role not in ['board', 'admin']:
+        abort(403)
+    
+    if not assignment.filename:
+        abort(404)
+    
+    # Get the file path
+    file_path = os.path.join(app.config['UPLOAD_PATH'], assignment.filename)
+    
+    if not os.path.exists(file_path):
+        abort(404)
+    
+    # Determine mimetype based on file extension
+    ext = assignment.filename.lower().rsplit('.', 1)[-1]
+    mimetype_map = {
+        'pdf': 'application/pdf',
+        'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg',
+        'png': 'image/png',
+        'gif': 'image/gif',
+        'doc': 'application/msword',
+        'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    }
+    
+    mimetype = mimetype_map.get(ext, 'application/octet-stream')
+    
+    # Send file to be viewed in browser (not as download)
+    return send_file(
+        file_path,
+        mimetype=mimetype,
+        as_attachment=False,  # This allows viewing in browser
+        download_name=assignment.filename
+    )
+
+
+@app.route('/task/file/download/<int:assignment_id>')
+@login_required
+def download_task_file(assignment_id):
+    """
+    Download a task assignment file (forces download)
+    - Users can download their own task files
+    - Board/admin members can download any task files
+    """
+    assignment = TaskAssignment.query.get_or_404(assignment_id)
+    
+    # Security check: Only allow user to download their own files or board members
+    if current_user.id != assignment.user_id and current_user.role not in ['board', 'admin']:
+        abort(403)  # Forbidden
+    
+    # Check if file exists
+    if not assignment.filename:
+        flash("No file has been uploaded for this task.", "warning")
+        return redirect(url_for('view_task', assignment_id=assignment_id))
+    
+    # Get the file path using app.config['UPLOAD_PATH']
+    file_path = os.path.join(app.config['UPLOAD_PATH'], assignment.filename)
+    
+    # Check if file actually exists on disk
+    if not os.path.exists(file_path):
+        flash("File not found on server.", "error")
+        return redirect(url_for('view_task', assignment_id=assignment_id))
+    
+    # Send the file as an attachment (forces download)
+    return send_file(
+        file_path,
+        as_attachment=True,  # This forces download instead of display
+        download_name=assignment.filename  # Preserves the original filename
+    )
+
 
 # Run the app if this file is executed directly
 if __name__ == "__main__": 

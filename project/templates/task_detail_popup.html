@@ -83,8 +83,8 @@
                                 <i class="fas fa-user-tie"></i> Created By
                             </h6>
                             <p class="fs-5">
-                                {% if task.created_by %}
-                                    {{ task.created_by.name }}
+                                {% if task.created_by_user %}
+                                    {{ task.created_by_user.name }}
                                 {% else %}
                                     Administrator
                                 {% endif %}
@@ -113,20 +113,73 @@
                                 <i class="fas fa-file"></i> Uploaded File
                             </h6>
                             <p class="fs-6">
-                                <a href="{{ url_for('static', filename='uploads/' + assignment.filename) }}" 
-                                   class="btn btn-sm btn-outline-primary" target="_blank">
-                                    <i class="fas fa-download"></i> {{ assignment.filename }}
+                                <a href="{{ url_for('download_task_file', assignment_id=assignment.id) }}" 
+                                   class="btn btn-sm btn-primary">
+                                    <i class="fas fa-download"></i> Download {{ assignment.filename }}
                                 </a>
                             </p>
                         </div>
                         {% endif %}
                     </div>
 
+                    <!-- Embedded PDF Viewer (if file exists and is PDF) -->
+                    {% if assignment.filename and assignment.filename.lower().endswith('.pdf') %}
+                    <div class="mb-4">
+                        <h5 class="text-primary mb-3">
+                            <i class="fas fa-file-pdf"></i> Document Preview
+                        </h5>
+                        <div class="pdf-viewer-container border rounded">
+                            <iframe 
+                                src="{{ url_for('view_task_file', assignment_id=assignment.id) }}#toolbar=1&navpanes=1&scrollbar=1" 
+                                class="pdf-viewer"
+                                type="application/pdf">
+                                <p>Your browser does not support PDFs. 
+                                    <a href="{{ url_for('download_task_file', assignment_id=assignment.id) }}">Download the PDF</a> instead.
+                                </p>
+                            </iframe>
+                        </div>
+                        <div class="text-center mt-2">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle"></i> PDF viewer - Use scroll to navigate pages
+                            </small>
+                        </div>
+                    </div>
+                    {% elif assignment.filename %}
+                    <!-- Show preview for images -->
+                    {% if assignment.filename.lower().endswith(('.jpg', '.jpeg', '.png', '.gif')) %}
+                    <div class="mb-4">
+                        <h5 class="text-primary mb-3">
+                            <i class="fas fa-image"></i> Image Preview
+                        </h5>
+                        <div class="text-center border rounded p-3 bg-light">
+                            <img src="{{ url_for('view_task_file', assignment_id=assignment.id) }}" 
+                                 class="img-fluid rounded shadow-sm" 
+                                 style="max-height: 500px;"
+                                 alt="Uploaded file">
+                        </div>
+                    </div>
+                    {% else %}
+                    <!-- Other file types - just show download option -->
+                    <div class="mb-4">
+                        <div class="alert alert-info">
+                            <i class="fas fa-file"></i> File uploaded: <strong>{{ assignment.filename }}</strong>
+                            <br>
+                            <small>Click the download button above to view this file.</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endif %}
+
                     <!-- Comments/Feedback -->
                     {% if assignment.comments %}
                     <div class="alert alert-info mb-4">
                         <h6 class="alert-heading">
-                            <i class="fas fa-comments"></i> Comments & Feedback
+                            <i class="fas fa-comments"></i> 
+                            {% if current_user.role in ['board', 'admin'] %}
+                                Student's Comments
+                            {% else %}
+                                Your Comments
+                            {% endif %}
                         </h6>
                         <p class="mb-0" style="white-space: pre-line;">{{ assignment.comments }}</p>
                     </div>
@@ -143,6 +196,25 @@
 
                         <form method="POST" action="{{ url_for('complete_task', assignment_id=assignment.id) }}" enctype="multipart/form-data">
                             
+                            <!-- File Upload (only for projects that require upload) -->
+                            {% if task.classification == 'project' and assignment.upload %}
+                            <div class="mb-3">
+                                <label for="completionFile" class="form-label fw-bold">
+                                    <i class="fas fa-upload"></i> Upload File 
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <input 
+                                    type="file" 
+                                    class="form-control" 
+                                    id="completionFile" 
+                                    name="completion_file" 
+                                    required>
+                                <small class="form-text text-muted">
+                                    Accepted formats: PDF, DOC, DOCX, JPG, PNG
+                                </small>
+                            </div>
+                            {% endif %}
+
                             <!-- Completion Comments -->
                             <div class="mb-3">
                                 <label for="completionComments" class="form-label fw-bold">
@@ -158,25 +230,6 @@
                                     Explain what you did to complete this task.
                                 </small>
                             </div>
-
-                            <!-- File Upload (only for projects that require upload) -->
-                            {% if task.classification == 'project' and assignment.upload %}
-                            <div class="mb-3">
-                                <label for="completionFile" class="form-label fw-bold">
-                                    <i class="fas fa-upload"></i> Upload Completion File 
-                                    <span class="text-danger">*</span>
-                                </label>
-                                <input 
-                                    type="file" 
-                                    class="form-control" 
-                                    id="completionFile" 
-                                    name="completion_file" 
-                                    required>
-                                <small class="form-text text-muted">
-                                    Accepted formats: PDF, DOC, DOCX, JPG, PNG
-                                </small>
-                            </div>
-                            {% endif %}
 
                             <!-- Submit Button -->
                             <div class="d-grid gap-2">
@@ -318,6 +371,34 @@
             opacity: 1;
             transform: translateY(0);
         }
+    }
+
+    /* PDF Viewer Styles */
+    .pdf-viewer-container {
+        background-color: #525659;
+        padding: 0;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .pdf-viewer {
+        width: 100%;
+        height: 600px;
+        border: none;
+        display: block;
+    }
+
+    /* Responsive PDF viewer */
+    @media (max-width: 768px) {
+        .pdf-viewer {
+            height: 400px;
+        }
+    }
+
+    /* Image preview styles */
+    .img-fluid {
+        max-width: 100%;
+        height: auto;
     }
 </style>
 
