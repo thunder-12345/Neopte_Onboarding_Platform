@@ -39,6 +39,17 @@
         <p class="stat-value">{{ hours_count }}</p>
       </div>
     </div>
+
+    <!-- Add project grades stat -->
+    {% set project_assignments = current_user.task_assignments|selectattr('task.classification', 'equalto', 'project')|list %}
+    {% set graded_projects = project_assignments|selectattr('status', 'equalto', 'graded')|list %}
+    <div class="stat-card">
+      <div class="stat-icon grades">🎓</div>
+      <div class="stat-info">
+        <p class="stat-label">Projects Graded</p>
+        <p class="stat-value">{{ graded_projects|length }} / {{ project_assignments|length }}</p>
+      </div>
+    </div>
   </div>
 
   <!-- Certificate Section -->
@@ -75,6 +86,421 @@
     </div>
   </div>
 
+  <br>
+  
+  <!-- Project Grades Section -->
+  {% if project_assignments %}
+  <div class="grades-section">
+    <div class="section-header">
+      <div class="header-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+          <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+        </svg>
+      </div>
+      <div>
+        <h2>Project Grades</h2>
+        <p>Your grades for all project assignments</p>
+      </div>
+    </div>
+
+    <div class="grades-table-container">
+      <table class="grades-table">
+        <thead>
+          <tr>
+            <th>Project Name</th>
+            <th>Due Date</th>
+            <th>Status</th>
+            <th>Grade</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for assignment in project_assignments|sort(attribute='due_date', reverse=True) %}
+          <tr class="grade-row {% if assignment.status == 'graded' %}graded{% elif assignment.status == 'done' %}pending{% else %}not-submitted{% endif %}">
+            <td class="project-name">
+              <div class="project-title">{{ assignment.task.title }}</div>
+              <div class="project-meta">
+                {% if assignment.task.created_by_user %}
+                  Created by {{ assignment.task.created_by_user.name }}
+                {% endif %}
+              </div>
+            </td>
+            <td class="due-date">
+              {{ assignment.due_date.strftime('%b %d, %Y') }}
+              {% if assignment.due_date.date() < now().date() and assignment.status == 'pending' %}
+                <span class="overdue-badge">Overdue</span>
+              {% endif %}
+            </td>
+            <td class="status">
+              {% if assignment.status == 'graded' %}
+                <span class="status-badge status-graded">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  Graded
+                </span>
+              {% elif assignment.status == 'done' %}
+                <span class="status-badge status-pending">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                  Pending Review
+                </span>
+              {% else %}
+                <span class="status-badge status-not-submitted">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  Not Submitted
+                </span>
+              {% endif %}
+            </td>
+            <td class="grade">
+              {% if assignment.status == 'graded' and assignment.score is not none %}
+                <div class="grade-display">
+                  <span class="grade-value">{{ assignment.score }}</span>
+                  <span class="grade-total">/100</span>
+                </div>
+              {% elif assignment.status == 'graded' %}
+                <span class="grade-complete">✓ Complete</span>
+              {% elif assignment.status == 'done' %}
+                <span class="grade-waiting">Awaiting Grade</span>
+              {% else %}
+                <span class="grade-empty">—</span>
+              {% endif %}
+            </td>
+            <td class="action">
+              <a href="{{ url_for('view_task', assignment_id=assignment.id) }}" class="view-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                View Details
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Grade Summary -->
+    {% set completed_with_scores = project_assignments|selectattr('status', 'equalto', 'graded')|selectattr('score', 'ne', None)|list %}
+    {% if completed_with_scores %}
+    <div class="grade-summary">
+      <div class="summary-card">
+        <div class="summary-label">Average Grade</div>
+        {% set total_score = completed_with_scores|sum(attribute='score') %}
+        {% set average = (total_score / completed_with_scores|length)|round(1) %}
+        <div class="summary-value">{{ average }}%</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Highest Grade</div>
+        {% set highest = completed_with_scores|map(attribute='score')|max %}
+        <div class="summary-value">{{ highest }}%</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Projects Completed</div>
+        <div class="summary-value">{{ graded_projects|length }}</div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Grades Report Section -->
+  {% if project_assignments %}
+  <div class="certificate-section">
+    <div class="section-header">
+      <div class="header-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+          <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+        </svg>
+      </div>
+      <div>
+        <h2>Your Grades Report</h2>
+        <p>Download your official project grades transcript</p>
+      </div>
+    </div>
+    
+    <div class="certificate-actions">
+      <a href="{{ url_for('view_grades_report') }}" target="_blank" class="action-btn btn-view">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+        View Grades Report
+      </a>
+      <a href="{{ url_for('download_grades_report') }}" class="action-btn btn-download">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        Download PDF
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
 </div>
+
+<style>
+/* Grades Section Styles */
+.grades-section {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  margin-bottom: 32px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.grades-section .section-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.grades-section .header-icon {
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.grades-section .section-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #1a202c;
+}
+
+.grades-section .section-header p {
+  margin: 4px 0 0 0;
+  color: #718096;
+  font-size: 14px;
+}
+
+/* Grades Table */
+.grades-table-container {
+  overflow-x: auto;
+  margin-bottom: 24px;
+}
+
+.grades-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.grades-table thead {
+  background: #f7fafc;
+  border-radius: 8px;
+}
+
+.grades-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 13px;
+  color: #4a5568;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.grades-table tbody tr {
+  border-bottom: 1px solid #e2e8f0;
+  transition: background-color 0.2s;
+}
+
+.grades-table tbody tr:hover {
+  background-color: #f7fafc;
+}
+
+.grades-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.grades-table td {
+  padding: 16px;
+}
+
+/* Project Name Column */
+.project-name .project-title {
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 4px;
+}
+
+.project-name .project-meta {
+  font-size: 13px;
+  color: #718096;
+}
+
+/* Due Date Column */
+.due-date {
+  color: #4a5568;
+  font-size: 14px;
+}
+
+.overdue-badge {
+  display: inline-block;
+  background: #fed7d7;
+  color: #c53030;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: 8px;
+  text-transform: uppercase;
+}
+
+/* Status Badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.status-graded {
+  background: #c6f6d5;
+  color: #22543d;
+}
+
+.status-pending {
+  background: #bee3f8;
+  color: #2c5282;
+}
+
+.status-not-submitted {
+  background: #feebc8;
+  color: #7c2d12;
+}
+
+/* Grade Display */
+.grade-display {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.grade-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #2d3748;
+}
+
+.grade-total {
+  font-size: 14px;
+  color: #718096;
+}
+
+.grade-complete {
+  color: #38a169;
+  font-weight: 600;
+}
+
+.grade-waiting {
+  color: #3182ce;
+  font-style: italic;
+  font-size: 13px;
+}
+
+.grade-empty {
+  color: #cbd5e0;
+  font-size: 20px;
+}
+
+/* View Button */
+.view-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #4299e1;
+  color: white;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.view-btn:hover {
+  background: #3182ce;
+  color: white;
+}
+
+/* Grade Summary Cards */
+.grade-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  padding: 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  color: white;
+}
+
+.summary-card {
+  text-align: center;
+}
+
+.summary-label {
+  font-size: 13px;
+  opacity: 0.9;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.summary-value {
+  font-size: 32px;
+  font-weight: 700;
+}
+
+/* Stats Section - Add grade icon */
+.stat-icon.grades {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .grades-table {
+    font-size: 13px;
+  }
+  
+  .grades-table th,
+  .grades-table td {
+    padding: 10px 8px;
+  }
+  
+  .grade-value {
+    font-size: 20px;
+  }
+  
+  .view-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  
+  .summary-value {
+    font-size: 24px;
+  }
+}
+</style>
 
 {% endblock %}

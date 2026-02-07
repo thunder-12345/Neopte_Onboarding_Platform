@@ -1,7 +1,7 @@
 # Imports
 from project import db, app
 from project.decorators import permission_required
-from flask import render_template, redirect, request, url_for, flash, send_from_directory, send_file, current_app, session
+from flask import render_template, redirect, request, url_for, flash, send_from_directory, send_file, current_app, session, abort
 from flask_login import login_user, login_required, logout_user, current_user
 from project.models import User, Document, Hours, ActivityLog, Task, TaskAssignment
 from project.forms import RegistrationForm, LoginForm, AddHoursForm, EditProfile, CreateTasksForm, CreateTaskAssignmentForm
@@ -17,7 +17,6 @@ from reportlab.lib.units import inch
 from reportlab.lib import colors
 import io
 from datetime import datetime, date
-
 
 # Mapping user roles to their dashboard route names
 redirect_target = {
@@ -1204,10 +1203,8 @@ def complete_task(assignment_id):
     )
     
     db.session.commit()
-    
-    flash(f"Task '{task.title}' submitted for review!")
-    return redirect(url_for('my_tasks'))
 
+    return redirect(url_for('my_tasks'))
 
 # ============================================================================
 # PENDING TASKS (Board/Admin review page)
@@ -1224,7 +1221,6 @@ def pending_tasks():
     pending_assignments = TaskAssignment.query.filter_by(status="done").all()
     
     return render_template('pending_tasks.html', assignments=pending_assignments)
-
 
 # ============================================================================
 # GRADE/APPROVE TASK (Board reviews and grades)
@@ -1302,19 +1298,6 @@ def my_tasks():
                          assigned=assigned_tasks,
                          pending=pending_review,
                          completed=completed_tasks)
-
-"""
-Add these routes to your app.py file to enable task file downloads
-This follows the same pattern as your existing document download functionality
-
-IMPORTANT: The URLs are /task/file/view and /task/file/download to avoid 
-conflict with your existing /task/view route
-"""
-
-from flask import send_file, abort
-import os
-
-# Add these routes to your app.py (place them near your other task routes)
 
 @app.route('/task/file/view/<int:assignment_id>')
 @login_required
@@ -1394,6 +1377,303 @@ def download_task_file(assignment_id):
         file_path,
         as_attachment=True,  # This forces download instead of display
         download_name=assignment.filename  # Preserves the original filename
+    )
+
+def generate_grades_report(user):
+    """
+    Generate a professional grades report PDF for a volunteer's project assignments.
+    
+    Args:
+        user: A User object from your database
+    
+    Returns:
+        BytesIO buffer containing the PDF data
+    """
+    
+    # Create PDF in memory
+    buffer = io.BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=letter)
+    width, height = letter  # 612 x 792 points
+    
+    # Get all project assignments for the user
+    project_assignments = [a for a in user.task_assignments if a.task.classification == 'project']
+    
+    # Calculate statistics
+    graded_assignments = [a for a in project_assignments if a.status == 'graded']
+    scored_assignments = [a for a in graded_assignments if a.score is not None]
+    
+    if scored_assignments:
+        total_score = sum(a.score for a in scored_assignments)
+        average_grade = total_score / len(scored_assignments)
+        highest_grade = max(a.score for a in scored_assignments)
+    else:
+        average_grade = None
+        highest_grade = None
+    
+    # ---------------------------
+    # HEADER WITH BORDERS
+    # ---------------------------
+    pdf.setStrokeColor(colors.HexColor('#667eea'))
+    pdf.setLineWidth(3)
+    pdf.rect(0.5 * inch, 0.5 * inch, width - 1*inch, height - 1*inch)
+    
+    pdf.setLineWidth(1)
+    pdf.rect(0.6 * inch, 0.6 * inch, width - 1.2*inch, height - 1.2*inch)
+    
+    y_pos = height - 1 * inch
+    
+    # Add logo at the top
+    logo_path = os.path.join(app.root_path, 'static', 'neopte logo.jpeg')
+    if os.path.exists(logo_path):
+        logo_width = width - 1.4 * inch
+        logo_height = 1.2 * inch
+        logo_x = 0.7 * inch
+        
+        pdf.drawImage(logo_path, logo_x, y_pos - logo_height, 
+                     width=logo_width, height=logo_height, 
+                     preserveAspectRatio=True, mask='auto')
+        y_pos -= logo_height + 0.4 * inch
+    else:
+        pdf.setFont("Helvetica-Bold", 28)
+        pdf.setFillColor(colors.HexColor('#667eea'))
+        title = "Neopte Foundation"
+        title_width = pdf.stringWidth(title, "Helvetica-Bold", 28)
+        pdf.drawString((width - title_width) / 2, y_pos, title)
+        y_pos -= 0.8 * inch
+    
+    # Document Title
+    pdf.setFont("Helvetica-Bold", 20)
+    pdf.setFillColor(colors.HexColor('#2d3748'))
+    doc_title = "PROJECT GRADES REPORT"
+    title_width = pdf.stringWidth(doc_title, "Helvetica-Bold", 20)
+    pdf.drawString((width - title_width) / 2, y_pos, doc_title)
+    y_pos -= 0.6 * inch
+    
+    # Volunteer Name
+    pdf.setFont("Helvetica-Bold", 16)
+    pdf.setFillColor(colors.HexColor('#667eea'))
+    name_width = pdf.stringWidth(user.name, "Helvetica-Bold", 16)
+    pdf.drawString((width - name_width) / 2, y_pos, user.name)
+    
+    # Underline
+    pdf.setStrokeColor(colors.HexColor('#667eea'))
+    pdf.setLineWidth(1)
+    pdf.line((width - name_width) / 2 - 10, y_pos - 5, 
+             (width + name_width) / 2 + 10, y_pos - 5)
+    y_pos -= 0.7 * inch
+    
+    # ---------------------------
+    # SUMMARY STATISTICS
+    # ---------------------------
+    if average_grade is not None:
+        pdf.setFont("Helvetica-Bold", 12)
+        pdf.setFillColor(colors.HexColor('#4a5568'))
+        
+        # Average Grade Box
+        box_width = 2.2 * inch
+        box_height = 0.8 * inch
+        box_x = width / 2 - 3.5 * inch
+        
+        # Draw boxes for stats
+        pdf.setFillColor(colors.HexColor('#f7fafc'))
+        pdf.rect(box_x, y_pos - box_height, box_width, box_height, fill=1, stroke=0)
+        
+        pdf.setFillColor(colors.HexColor('#4a5568'))
+        pdf.setFont("Helvetica", 10)
+        pdf.drawString(box_x + 0.2*inch, y_pos - 0.3*inch, "Average Grade")
+        pdf.setFont("Helvetica-Bold", 16)
+        pdf.setFillColor(colors.HexColor('#667eea'))
+        pdf.drawString(box_x + 0.2*inch, y_pos - 0.6*inch, f"{average_grade:.1f}%")
+        
+        # Highest Grade Box
+        box_x = width / 2 - 1.1 * inch
+        pdf.setFillColor(colors.HexColor('#f7fafc'))
+        pdf.rect(box_x, y_pos - box_height, box_width, box_height, fill=1, stroke=0)
+        
+        pdf.setFillColor(colors.HexColor('#4a5568'))
+        pdf.setFont("Helvetica", 10)
+        pdf.drawString(box_x + 0.2*inch, y_pos - 0.3*inch, "Highest Grade")
+        pdf.setFont("Helvetica-Bold", 16)
+        pdf.setFillColor(colors.HexColor('#38a169'))
+        pdf.drawString(box_x + 0.2*inch, y_pos - 0.6*inch, f"{highest_grade:.1f}%")
+        
+        # Projects Completed Box
+        box_x = width / 2 + 1.3 * inch
+        pdf.setFillColor(colors.HexColor('#f7fafc'))
+        pdf.rect(box_x, y_pos - box_height, box_width, box_height, fill=1, stroke=0)
+        
+        pdf.setFillColor(colors.HexColor('#4a5568'))
+        pdf.setFont("Helvetica", 10)
+        pdf.drawString(box_x + 0.2*inch, y_pos - 0.3*inch, "Projects Graded")
+        pdf.setFont("Helvetica-Bold", 16)
+        pdf.setFillColor(colors.HexColor('#3182ce'))
+        pdf.drawString(box_x + 0.2*inch, y_pos - 0.6*inch, f"{len(graded_assignments)}/{len(project_assignments)}")
+        
+        y_pos -= box_height + 0.5 * inch
+    else:
+        y_pos -= 0.3 * inch
+    
+    # ---------------------------
+    # PROJECTS TABLE
+    # ---------------------------
+    pdf.setFont("Helvetica-Bold", 11)
+    pdf.setFillColor(colors.HexColor('#2d3748'))
+    pdf.drawString(0.8*inch, y_pos, "Project Assignments")
+    y_pos -= 0.3 * inch
+    
+    # Table headers
+    pdf.setFillColor(colors.HexColor('#f7fafc'))
+    pdf.rect(0.7*inch, y_pos - 0.35*inch, width - 1.4*inch, 0.35*inch, fill=1, stroke=0)
+    
+    pdf.setFont("Helvetica-Bold", 9)
+    pdf.setFillColor(colors.HexColor('#4a5568'))
+    pdf.drawString(0.8*inch, y_pos - 0.25*inch, "Project Name")
+    pdf.drawString(3.8*inch, y_pos - 0.25*inch, "Due Date")
+    pdf.drawString(5.2*inch, y_pos - 0.25*inch, "Status")
+    pdf.drawString(6.5*inch, y_pos - 0.25*inch, "Grade")
+    
+    y_pos -= 0.5 * inch
+    
+    # Table rows - sort by due date (most recent first)
+    sorted_assignments = sorted(project_assignments, key=lambda a: a.due_date, reverse=True)
+    
+    for i, assignment in enumerate(sorted_assignments):
+        # Stop if we run out of space
+        if y_pos < 1.5 * inch:
+            break
+        
+        # Alternating row colors
+        if i % 2 == 0:
+            pdf.setFillColor(colors.HexColor('#ffffff'))
+        else:
+            pdf.setFillColor(colors.HexColor('#f7fafc'))
+        pdf.rect(0.7*inch, y_pos - 0.3*inch, width - 1.4*inch, 0.3*inch, fill=1, stroke=0)
+        
+        # Project name (truncate if too long)
+        pdf.setFont("Helvetica", 8)
+        pdf.setFillColor(colors.HexColor('#2d3748'))
+        project_name = assignment.task.title
+        if len(project_name) > 45:
+            project_name = project_name[:42] + "..."
+        pdf.drawString(0.8*inch, y_pos - 0.2*inch, project_name)
+        
+        # Due date
+        pdf.drawString(3.8*inch, y_pos - 0.2*inch, assignment.due_date.strftime('%m/%d/%Y'))
+        
+        # Status
+        if assignment.status == 'graded':
+            pdf.setFillColor(colors.HexColor('#38a169'))
+            status_text = "Graded"
+        elif assignment.status == 'done':
+            pdf.setFillColor(colors.HexColor('#3182ce'))
+            status_text = "Pending"
+        else:
+            pdf.setFillColor(colors.HexColor('#d69e2e'))
+            status_text = "Not Submitted"
+        pdf.drawString(5.2*inch, y_pos - 0.2*inch, status_text)
+        
+        # Grade
+        pdf.setFillColor(colors.HexColor('#2d3748'))
+        if assignment.status == 'graded' and assignment.score is not None:
+            pdf.setFont("Helvetica-Bold", 9)
+            pdf.drawString(6.5*inch, y_pos - 0.2*inch, f"{assignment.score:.1f}")
+        elif assignment.status == 'graded':
+            pdf.setFont("Helvetica", 8)
+            pdf.drawString(6.5*inch, y_pos - 0.2*inch, "Complete")
+        else:
+            pdf.setFont("Helvetica", 8)
+            pdf.setFillColor(colors.HexColor('#a0aec0'))
+            pdf.drawString(6.5*inch, y_pos - 0.2*inch, "—")
+        
+        y_pos -= 0.3 * inch
+    
+    # If more projects than fit on page
+    if len(sorted_assignments) > (height - y_pos) / (0.3 * inch):
+        pdf.setFont("Helvetica-Oblique", 8)
+        pdf.setFillColor(colors.HexColor('#718096'))
+        pdf.drawString(0.8*inch, y_pos - 0.2*inch, f"+ {len(sorted_assignments) - i - 1} more projects...")
+    
+    # ---------------------------
+    # FOOTER
+    # ---------------------------
+    pdf.setFont("Helvetica", 8)
+    pdf.setFillColor(colors.HexColor('#a0aec0'))
+    
+    # Report ID (bottom right)
+    report_id = f"Report ID: NF-GR-{user.id:05d}"
+    pdf.drawString(width - 2.5*inch, 0.7*inch, report_id)
+    
+    # Generated date (bottom left)
+    gen_date = datetime.now().strftime('%B %d, %Y')
+    pdf.drawString(0.7*inch, 0.7*inch, f"Generated: {gen_date}")
+    
+    # Finalize PDF
+    pdf.showPage()
+    pdf.save()
+    
+    buffer.seek(0)
+    return buffer
+
+
+@app.route('/grades/view')
+@login_required
+@permission_required('volunteer')
+def view_grades_report():
+    """
+    View grades report in browser.
+    
+    Volunteers/interns see their own report.
+    Board/admin can view any user's report by passing ?user_id=X
+    """
+    # Determine which user's report to show
+    if current_user.role in ['board', 'admin']:
+        user_id = request.args.get('user_id', type=int)
+        if user_id:
+            user = User.query.get_or_404(user_id)
+        else:
+            flash("No user specified.")
+            return redirect(url_for(redirect_target.get(current_user.role)))
+    else:
+        user = current_user
+    
+    # Generate the PDF
+    pdf_buffer = generate_grades_report(user)
+    
+    # Send it to the browser (opens in new tab)
+    return send_file(
+        pdf_buffer,
+        mimetype='application/pdf',
+        as_attachment=False,  # False = open in browser
+        download_name=f'neopte_grades_{user.name.replace(" ", "_")}.pdf'
+    )
+
+@app.route('/grades/download')
+@login_required
+@permission_required('volunteer')
+def download_grades_report():
+    """
+    Download grades report to computer.
+    """
+    # Same user determination logic
+    if current_user.role in ['board', 'admin']:
+        user_id = request.args.get('user_id', type=int)
+        if user_id:
+            user = User.query.get_or_404(user_id)
+        else:
+            flash("No user specified.")
+            return redirect(url_for(redirect_target.get(current_user.role)))
+    else:
+        user = current_user
+    
+    # Generate the PDF
+    pdf_buffer = generate_grades_report(user)
+    
+    # Send it as a download
+    return send_file(
+        pdf_buffer,
+        mimetype='application/pdf',
+        as_attachment=True,  # True = force download
+        download_name=f'neopte_grades_report_{user.name.replace(" ", "_")}.pdf'
     )
 
 
