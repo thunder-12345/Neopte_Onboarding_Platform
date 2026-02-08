@@ -1244,6 +1244,7 @@ def complete_task(assignment_id):
     if task.skip_review:
         # Auto-complete without board review
         assignment.status = "graded"
+        flash_message = f"'{task.title}' completed!"  # ADD THIS LINE
         
         log_event(
             actor=current_user,

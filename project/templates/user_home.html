@@ -1,9 +1,8 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="jumbotron">
-  {% if current_user.is_authenticated %}
+  {% if current_user.is_authenticated and current_user.role == "user" %}
     <p>Hi {{ current_user.name }}! You are a user!</p>
-
     <p>Please contact a board member to be assigned a role!</p>
   {% else %}
     <div class="alert alert-secondary" role="alert">
