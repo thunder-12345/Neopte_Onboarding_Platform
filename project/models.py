@@ -33,13 +33,10 @@ class User(db.Model, UserMixin):
     )
     
 
-    def __init__(self, name, email, password, picture, role="user"):
+    def __init__(self, name, email, password):
         self.name = name
         self.email = email
         self.password_hash = generate_password_hash(password, method = "pbkdf2:sha256")
-        self.date_created = func.now()
-        self.picture = picture
-        self.role = role
 
     def check_password(self, input_password):
         return check_password_hash(self.password_hash, input_password)
