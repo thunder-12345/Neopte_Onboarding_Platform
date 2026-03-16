@@ -31,7 +31,6 @@ class LoginForm(FlaskForm):
 
 class EditProfile(FlaskForm): 
     name = StringField("Edit Name: ")
-    email = StringField("Edit Email: ", validators=[Optional(), Email()])
     address = StringField("Edit Address: ")
     picture = FileField("Profile Picture: ", validators=[Optional(), FileAllowed(['jpg', 'jpeg', 'png', 'gif'], 'Images only!')])
     submit = SubmitField("Submit Changes")

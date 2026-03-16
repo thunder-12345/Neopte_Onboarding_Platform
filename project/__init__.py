@@ -9,15 +9,15 @@ from flask_login import LoginManager
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
 # Set up configuration for SQLAlchemy and secret key
-# app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///project.db" - commented out for POSTGRESQL
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///project.db" 
 
-uri = os.environ.get("DATABASE_URL")
+# uri = os.environ.get("DATABASE_URL")
 
-if uri and uri.startswith("postgres://"):
-    uri = uri.replace("postgres://", "postgresql://", 1)
+# if uri and uri.startswith("postgres://"):
+#     uri = uri.replace("postgres://", "postgresql://", 1)
 
-app.config["SQLALCHEMY_DATABASE_URI"] = uri
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+# app.config["SQLALCHEMY_DATABASE_URI"] = uri
+# app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 
 app.config['SECRET_KEY'] = 'mysecretkey'

@@ -492,10 +492,6 @@ def edit_profile():
                 changed_fields['name'] = form.data['name']
                 current_user.name = form.data['name']
 
-            if form.data['email'] and form.data['email'] != current_user.email:
-                changed_fields['email'] = form.data['email']
-                current_user.email=form.data['email']
-
             if form.data['address'] and form.data['address'] != current_user.address:
                 changed_fields['address'] = form.data['address']
                 current_user.address=form.data['address']
