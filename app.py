@@ -637,7 +637,7 @@ def generate_volunteer_certificate(user):
     y_pos = height - 1 * inch
     
     # Add logo image at the top - stretched nearly border to border
-    logo_path = os.path.join(app.root_path, 'static', 'neopte logo.jpeg')
+    logo_path = os.path.join(app.root_path, 'static', 'neopte logo.jpg')
     if os.path.exists(logo_path):
         # Logo dimensions - stretched almost to borders
         logo_width = width - 1.4 * inch  # Stops just before the inner border
@@ -1532,7 +1532,7 @@ def generate_grades_report(user):
     y_pos = height - 1 * inch
     
     # Add logo at the top
-    logo_path = os.path.join(app.root_path, 'static', 'neopte logo.jpeg')
+    logo_path = os.path.join(app.root_path, 'static', 'neopte logo.jpg')
     if os.path.exists(logo_path):
         logo_width = width - 1.4 * inch
         logo_height = 1.2 * inch
