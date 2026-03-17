@@ -152,6 +152,7 @@ def delete_user():
         target_type="User",
         target_id=user.id,
         details={
+            "name": user.name,
             "email": user.email,
             "role": user.role
         }
