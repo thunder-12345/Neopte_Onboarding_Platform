@@ -555,7 +555,10 @@
                                 <span class="user-role">{{ user.role }}</span>
                             </div>
                         </div>
-                        <div class="user-id">ID: {{ user.id }}</div>
+                        <div class="user-id" style="display: flex; justify-content: space-between; margin-top: 8px;">
+                            <span>ID: {{ user.id }}</span>
+                            <span>📋 {{ user.task_assignments | length }} tasks</span>
+                        </div>
                         <button type="submit" class="view-tasks-btn">View Tasks →</button>
                     </div>
                 </form>
