@@ -211,6 +211,20 @@
           color: #9ca3af;
           pointer-events: none;
       }
+
+      /* Nav active link styles */
+      .navbar-brand {
+        color: rgba(255,255,255,0.55) !important;
+      }
+      .navbar-brand.active-nav {
+        color: white !important;
+      }
+      .navbar-nav .nav-link {
+        color: rgba(255,255,255,0.55) !important;
+      }
+      .navbar-nav .nav-link.active-nav {
+        color: white !important;
+      }
       </style>
   </head>
   <body>
@@ -218,7 +232,7 @@
       <div class="container-fluid d-flex">
 
         <!-- Home link -->
-        <a class="navbar-brand" 
+        <a class="navbar-brand" id="home-link"
             href="{% if current_user.is_authenticated and current_user.role == 'admin' %}
               {{ url_for('admin_dashboard') }}
             {% elif current_user.is_authenticated and current_user.role == 'board' %}  
@@ -344,8 +358,37 @@
       {% endfor %}
     {% endwith %}
 
-
     <script src="{{ url_for('static', filename='js/pdf-popup.js') }}"></script>
+
+    <script>
+      const currentPath = window.location.pathname;
+
+      // Highlight home link
+      const homeLink = document.getElementById('home-link');
+      if (homeLink) {
+        try {
+          if (new URL(homeLink.href).pathname === currentPath) {
+            homeLink.classList.add('active-nav');
+          }
+        } catch(e) {}
+      }
+
+      // Highlight nav links (skip dropdown toggles)
+      document.querySelectorAll('.navbar-nav .nav-link:not(.dropdown-toggle)').forEach(link => {
+        if (!link.href || link.href === '#') return;
+        try {
+          if (new URL(link.href).pathname === currentPath) {
+            link.classList.add('active-nav');
+            // If inside a dropdown, highlight the toggle too
+            const parentDropdown = link.closest('.dropdown');
+            if (parentDropdown) {
+              const toggle = parentDropdown.querySelector('.dropdown-toggle');
+              if (toggle) toggle.classList.add('active-nav');
+            }
+          }
+        } catch(e) {}
+      });
+    </script>
 
   </body>
 </html>
