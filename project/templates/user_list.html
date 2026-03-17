@@ -78,7 +78,7 @@
                     <form action="{{ url_for('upgrade_user') }}" method="post" style="display:inline;">
                         <input type="hidden" name="user_id" value="{{ user.id }}">
                         <input type="hidden" name="role_choice" value="{{ role_choice }}">
-                        <button type="submit" class="dropdown-item">
+                        <button type="button" class="dropdown-item change-btn" data-name="{{ user.name }}" data-choice = "{{ role_choice }}">
                             Change role to {{ role_choice|capitalize }}
                         </button>
                     </form>
@@ -89,7 +89,6 @@
                     </ul>
                 </div>
                 
-                <!-- Delete User column -->
                 <!-- Delete User column -->
                 <td>
                     <form action="{{ url_for('delete_user') }}" method="post">
@@ -123,6 +122,30 @@
                 confirmButtonColor: '#d33',
                 cancelButtonColor: '#6c757d',
                 confirmButtonText: 'Yes, delete',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                form.submit();
+                }
+            });
+            });
+        });
+    </script>
+
+    <script>
+        document.querySelectorAll('.change-btn').forEach(button => {
+            button.addEventListener('click', function () {
+            const userName = this.dataset.name;
+            const form = this.closest('form');
+
+            Swal.fire({
+                title: 'Are you sure?',
+                text: `You are about to change the role of ${userName} to ${this.dataset.choice}. Are you sure?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, change',
                 cancelButtonText: 'Cancel'
             }).then((result) => {
                 if (result.isConfirmed) {
