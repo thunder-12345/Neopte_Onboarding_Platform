@@ -1232,8 +1232,13 @@ def complete_task(assignment_id):
     
     # Get completion comments
     completion_comments = request.form.get('completion_comments', '')
+    # Get completion comments
+    completion_comments = request.form.get('completion_comments', '')
     if completion_comments:
-        assignment.comments = completion_comments
+        if assignment.comments:
+            assignment.comments += f"\n\n--- Student Note ---\n{completion_comments}"
+        else:
+            assignment.comments = completion_comments
     
     # =====================================================================
     # SKIP REVIEW LOGIC FOR REMINDERS
@@ -1298,32 +1303,57 @@ def pending_tasks():
 @login_required
 @permission_required('board')
 def grade_task(assignment_id):
-    """
-    Board members can grade/approve completed tasks.
-    Sets score and changes status to "graded".
-    """
     assignment = TaskAssignment.query.get_or_404(assignment_id)
     task = assignment.task
-    
-    # Get score and feedback from form
+    old_status = assignment.status
+
+    # Handle send back to pending
+    if request.form.get("send_back"):
+        assignment.status = "pending"
+
+        # Update due date if provided
+        new_due_date = request.form.get("new_due_date")
+        if new_due_date:
+            assignment.due_date = datetime.strptime(new_due_date, '%Y-%m-%d')
+
+        # Add reason to comments
+        reason = request.form.get("send_back_reason", "").strip()
+        note = "\n\n--- Board Note ---\nReturned for revision."
+        if reason:
+            note += f"\nReason: {reason}"
+        assignment.comments = (assignment.comments or "") + note
+
+        log_event(
+            actor=current_user,
+            action="task_returned",
+            target_type="TaskAssignment",
+            target_id=assignment.id,
+            details={
+                "task_title": task.title,
+                "old_status": old_status,
+                "user_id": assignment.user_id,
+                "new_due_date": new_due_date
+            }
+        )
+        db.session.commit()
+        flash(f"Task returned to {assignment.user.name} for revision.", "success")
+        return redirect(request.referrer or url_for('pending_tasks'))
+
+    # Normal grading flow
     score = request.form.get("score", type=float)
     feedback = request.form.get("feedback", type=str)
-    
-    old_status = assignment.status
-    
-    # Update assignment
+
     if score is not None:
         assignment.score = score
-    
+
     if feedback:
-        # Append board feedback to existing comments
         if assignment.comments:
             assignment.comments += f"\n\n--- Board Feedback ---\n{feedback}"
         else:
             assignment.comments = f"--- Board Feedback ---\n{feedback}"
-    
+
     assignment.status = "graded"
-    
+
     log_event(
         actor=current_user,
         action="task_graded",
@@ -1336,9 +1366,9 @@ def grade_task(assignment_id):
             "user_id": assignment.user_id
         }
     )
-    
+
     db.session.commit()
-    
+    flash("Task graded successfully.", "success")
     return redirect(request.referrer or url_for('pending_tasks'))
 
 
@@ -1453,6 +1483,50 @@ def view_task_file(assignment_id):
         as_attachment=False,  # This allows viewing in browser
         download_name=assignment.filename
     )
+
+@app.route("/task/edit/<int:task_id>", methods=["GET", "POST"])
+@login_required
+@permission_required('board')
+def edit_task(task_id):
+    task = Task.query.get_or_404(task_id)
+    
+    form = CreateTasksForm(obj=task)
+    
+    if request.method == "POST" and form.validate_on_submit():
+        task.title = form.data['title']
+        task.description = form.data['description']
+        task.classification = form.data['classification']
+        task.assigned_role = form.data['assigned_role']
+        task.is_recurring = form.data.get('is_recurring', False)
+        task.recurrence_frequency = form.data.get('recurrence_frequency')
+        task.recurrence_end_date = form.data.get('recurrence_end_date')
+        task.skip_review = form.data.get('skip_review', False)
+
+        # Update all assignments' due dates if provided
+        new_due_date = request.form.get('due_date')
+        upload_required = request.form.get('upload_required') == 'y'
+
+        if new_due_date:
+            new_due_dt = datetime.strptime(new_due_date, '%Y-%m-%d')
+            for assignment in task.assignments:
+                assignment.due_date = new_due_dt
+
+        for assignment in task.assignments:
+            assignment.upload = upload_required
+
+        log_event(
+            actor=current_user,
+            action="task_edited",
+            target_type="Task",
+            target_id=task.id,
+            details={"title": task.title}
+        )
+
+        db.session.commit()
+        flash(f"Task '{task.title}' updated successfully.", "success")
+        return redirect(url_for('task_status'))
+
+    return render_template("edit_task.html", form=form, task=task)
 
 
 @app.route('/task/file/download/<int:assignment_id>')

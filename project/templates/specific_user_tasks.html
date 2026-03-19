@@ -91,6 +91,16 @@
         border-bottom-color: #fde047;
     }
 
+    .section-header.pending-review {
+        background-color: #fff7ed;
+        border-bottom-color: #fed7aa;
+    }
+
+    .section-header.completed {
+        background-color: #f0fdf4;
+        border-bottom-color: #bbf7d0;
+    }
+
     .task-list {
         padding: 0;
         margin: 0;
@@ -103,7 +113,10 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        transition: background-color 0.2s;
+        transition: background-color 0.2s, transform 0.1s;
+        text-decoration: none;
+        color: inherit;
+        cursor: pointer;
     }
 
     .task-item:last-child {
@@ -112,6 +125,7 @@
 
     .task-item:hover {
         background-color: #f8fafc;
+        transform: translateX(4px);
     }
 
     .task-main {
@@ -216,6 +230,17 @@
         font-size: 14px;
         color: #64748b;
     }
+
+    .view-icon {
+        opacity: 0;
+        transition: opacity 0.2s;
+        margin-left: 12px;
+        color: #3b82f6;
+    }
+
+    .task-item:hover .view-icon {
+        opacity: 1;
+    }
 </style>
 {% endblock %}
 
@@ -235,7 +260,8 @@
     </div>
 
     {% if assignments %}
-        <!-- Overdue Tasks -->
+
+        <!-- Overdue -->
         {% set overdue_tasks = assignments | selectattr('is_overdue', 'equalto', True) | list %}
         {% if overdue_tasks %}
         <div class="section-card">
@@ -245,23 +271,19 @@
             </div>
             <ul class="task-list">
                 {% for assignment in overdue_tasks %}
-                <li class="task-item">
+                <a href="{{ url_for('view_task', assignment_id=assignment.id) }}" class="task-item">
                     <div class="task-main">
-                        <div class="task-title">{{ assignment.task.title }}</div>
+                        <div class="task-title">
+                            {{ assignment.task.title }}
+                            <span class="view-icon">→</span>
+                        </div>
                         <div class="task-meta">
                             <span class="task-type">{{ assignment.task.classification.title() }}</span>
-                            <span class="task-date">
-                                📅 {{ assignment.due_date.strftime('%b %d, %Y') if assignment.due_date else 'No date' }}
-                            </span>
+                            <span class="task-date">📅 {{ assignment.due_date.strftime('%b %d, %Y') if assignment.due_date else 'No date' }}</span>
                         </div>
                     </div>
-                    <span class="task-status 
-                        {% if assignment.status == 'graded' %}status-graded
-                        {% elif assignment.status == 'done' %}status-done
-                        {% else %}status-pending{% endif %}">
-                        {{ assignment.status.replace('_', ' ').title() }}
-                    </span>
-                </li>
+                    <span class="task-status status-pending">{{ assignment.status.replace('_', ' ').title() }}</span>
+                </a>
                 {% endfor %}
             </ul>
         </div>
@@ -277,23 +299,19 @@
             </div>
             <ul class="task-list">
                 {% for assignment in this_week_tasks %}
-                <li class="task-item">
+                <a href="{{ url_for('view_task', assignment_id=assignment.id) }}" class="task-item">
                     <div class="task-main">
-                        <div class="task-title">{{ assignment.task.title }}</div>
+                        <div class="task-title">
+                            {{ assignment.task.title }}
+                            <span class="view-icon">→</span>
+                        </div>
                         <div class="task-meta">
                             <span class="task-type">{{ assignment.task.classification.title() }}</span>
-                            <span class="task-date">
-                                📅 {{ assignment.due_date.strftime('%b %d, %Y') if assignment.due_date else 'No date' }}
-                            </span>
+                            <span class="task-date">📅 {{ assignment.due_date.strftime('%b %d, %Y') if assignment.due_date else 'No date' }}</span>
                         </div>
                     </div>
-                    <span class="task-status 
-                        {% if assignment.status == 'graded' %}status-graded
-                        {% elif assignment.status == 'done' %}status-done
-                        {% else %}status-pending{% endif %}">
-                        {{ assignment.status.replace('_', ' ').title() }}
-                    </span>
-                </li>
+                    <span class="task-status status-pending">{{ assignment.status.replace('_', ' ').title() }}</span>
+                </a>
                 {% endfor %}
             </ul>
         </div>
@@ -309,23 +327,19 @@
             </div>
             <ul class="task-list">
                 {% for assignment in next_week_tasks %}
-                <li class="task-item">
+                <a href="{{ url_for('view_task', assignment_id=assignment.id) }}" class="task-item">
                     <div class="task-main">
-                        <div class="task-title">{{ assignment.task.title }}</div>
+                        <div class="task-title">
+                            {{ assignment.task.title }}
+                            <span class="view-icon">→</span>
+                        </div>
                         <div class="task-meta">
                             <span class="task-type">{{ assignment.task.classification.title() }}</span>
-                            <span class="task-date">
-                                📅 {{ assignment.due_date.strftime('%b %d, %Y') if assignment.due_date else 'No date' }}
-                            </span>
+                            <span class="task-date">📅 {{ assignment.due_date.strftime('%b %d, %Y') if assignment.due_date else 'No date' }}</span>
                         </div>
                     </div>
-                    <span class="task-status 
-                        {% if assignment.status == 'graded' %}status-graded
-                        {% elif assignment.status == 'done' %}status-done
-                        {% else %}status-pending{% endif %}">
-                        {{ assignment.status.replace('_', ' ').title() }}
-                    </span>
-                </li>
+                    <span class="task-status status-pending">{{ assignment.status.replace('_', ' ').title() }}</span>
+                </a>
                 {% endfor %}
             </ul>
         </div>
@@ -341,23 +355,78 @@
             </div>
             <ul class="task-list">
                 {% for assignment in later_tasks %}
-                <li class="task-item">
+                <a href="{{ url_for('view_task', assignment_id=assignment.id) }}" class="task-item">
                     <div class="task-main">
-                        <div class="task-title">{{ assignment.task.title }}</div>
+                        <div class="task-title">
+                            {{ assignment.task.title }}
+                            <span class="view-icon">→</span>
+                        </div>
                         <div class="task-meta">
                             <span class="task-type">{{ assignment.task.classification.title() }}</span>
-                            <span class="task-date">
-                                📅 {{ assignment.due_date.strftime('%b %d, %Y') if assignment.due_date else 'No date' }}
-                            </span>
+                            <span class="task-date">📅 {{ assignment.due_date.strftime('%b %d, %Y') if assignment.due_date else 'No date' }}</span>
                         </div>
                     </div>
-                    <span class="task-status 
-                        {% if assignment.status == 'graded' %}status-graded
-                        {% elif assignment.status == 'done' %}status-done
-                        {% else %}status-pending{% endif %}">
-                        {{ assignment.status.replace('_', ' ').title() }}
-                    </span>
-                </li>
+                    <span class="task-status status-pending">{{ assignment.status.replace('_', ' ').title() }}</span>
+                </a>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <!-- Pending Review (done) -->
+        {% set pending_review = assignments | selectattr('status', 'equalto', 'done') | list %}
+        {% if pending_review %}
+        <div class="section-card">
+            <div class="section-header pending-review">
+                <h2>⏳ Pending Review</h2>
+                <span class="badge-count">{{ pending_review|length }}</span>
+            </div>
+            <ul class="task-list">
+                {% for assignment in pending_review %}
+                <a href="{{ url_for('view_task', assignment_id=assignment.id) }}" class="task-item">
+                    <div class="task-main">
+                        <div class="task-title">
+                            {{ assignment.task.title }}
+                            <span class="view-icon">→ Review</span>
+                        </div>
+                        <div class="task-meta">
+                            <span class="task-type">{{ assignment.task.classification.title() }}</span>
+                            <span class="task-date">📅 {{ assignment.due_date.strftime('%b %d, %Y') if assignment.due_date else 'No date' }}</span>
+                        </div>
+                    </div>
+                    <span class="task-status status-done">Pending Review</span>
+                </a>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <!-- Completed (graded) -->
+        {% set completed = assignments | selectattr('status', 'equalto', 'graded') | list %}
+        {% if completed %}
+        <div class="section-card">
+            <div class="section-header completed">
+                <h2>✅ Completed</h2>
+                <span class="badge-count">{{ completed|length }}</span>
+            </div>
+            <ul class="task-list">
+                {% for assignment in completed %}
+                <a href="{{ url_for('view_task', assignment_id=assignment.id) }}" class="task-item">
+                    <div class="task-main">
+                        <div class="task-title">
+                            {{ assignment.task.title }}
+                            <span class="view-icon">→</span>
+                        </div>
+                        <div class="task-meta">
+                            <span class="task-type">{{ assignment.task.classification.title() }}</span>
+                            <span class="task-date">📅 {{ assignment.due_date.strftime('%b %d, %Y') if assignment.due_date else 'No date' }}</span>
+                            {% if assignment.score is not none %}
+                            <span class="task-date">⭐ Score: {{ assignment.score }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <span class="task-status status-graded">Completed</span>
+                </a>
                 {% endfor %}
             </ul>
         </div>

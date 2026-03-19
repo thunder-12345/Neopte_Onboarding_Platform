@@ -7,26 +7,37 @@
         <i class="fas fa-arrow-left"></i> Back
     </a>
 
-    <!-- Task Detail Card (Large popup-style) -->
+    <!-- Task Detail Card -->
     <div class="row justify-content-center">
         <div class="col-lg-8 col-md-10">
             <div class="card shadow-lg border-0">
-                
-                <!-- Header with Task Type Badge -->
+
+                <!-- Header with Task Type Badge + Edit Button for board/admin -->
                 <div class="card-header bg-gradient text-white {% if task.classification == 'project' %}bg-primary{% else %}bg-info{% endif %} py-3">
                     <div class="d-flex justify-content-between align-items-center">
                         <h3 class="mb-0">
                             <i class="fas {% if task.classification == 'project' %}fa-project-diagram{% else %}fa-bell{% endif %}"></i>
                             {{ task.title }}
                         </h3>
-                        <span class="badge {% if task.classification == 'project' %}bg-white text-primary{% else %}bg-white text-info{% endif %} fs-6">
-                            {{ task.classification|title }}
-                        </span>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge {% if task.classification == 'project' %}bg-white text-primary{% else %}bg-white text-info{% endif %} fs-6">
+                                {{ task.classification|title }}
+                            </span>
+                            {% if current_user.role in ['board', 'admin'] %}
+                                <a href="{{ url_for('edit_task', task_id=task.id) }}" 
+                                class="btn btn-sm btn-light fw-semibold shadow-sm"
+                                style="border: none; background: rgba(255,255,255,0.95); color: #f5a70b; letter-spacing: 0.3px; transition: all 0.2s;"
+                                onmouseover="this.style.background='white'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.2)';"
+                                onmouseout="this.style.background='rgba(255,255,255,0.95)'; this.style.transform='translateY(0)'; this.style.boxShadow='';">
+                                    <i class="fas fa-edit me-1"></i> Edit Task
+                                </a>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
 
                 <div class="card-body p-4">
-                    
+
                     <!-- Status Badge -->
                     <div class="mb-4">
                         <h6 class="text-muted mb-2">Current Status:</h6>
@@ -45,8 +56,7 @@
                             {% elif assignment.status == 'graded' %}Completed & Graded
                             {% endif %}
                         </span>
-                        
-                        <!-- Show score if graded -->
+
                         {% if assignment.status == 'graded' and assignment.score is not none %}
                             <span class="badge bg-success fs-6 px-3 py-2 ms-2">
                                 <i class="fas fa-star"></i> Score: {{ assignment.score }}
@@ -106,14 +116,13 @@
                         </div>
                         {% endif %}
 
-                        <!-- Show uploaded file if exists -->
                         {% if assignment.filename %}
                         <div class="col-md-6 mb-3">
                             <h6 class="text-muted mb-2">
                                 <i class="fas fa-file"></i> Uploaded File
                             </h6>
                             <p class="fs-6">
-                                <a href="{{ url_for('download_task_file', assignment_id=assignment.id) }}" 
+                                <a href="{{ url_for('download_task_file', assignment_id=assignment.id) }}"
                                    class="btn btn-sm btn-primary">
                                     <i class="fas fa-download"></i> Download {{ assignment.filename }}
                                 </a>
@@ -122,18 +131,18 @@
                         {% endif %}
                     </div>
 
-                    <!-- Embedded PDF Viewer (if file exists and is PDF) -->
+                    <!-- PDF Viewer -->
                     {% if assignment.filename and assignment.filename.lower().endswith('.pdf') %}
                     <div class="mb-4">
                         <h5 class="text-primary mb-3">
                             <i class="fas fa-file-pdf"></i> Document Preview
                         </h5>
                         <div class="pdf-viewer-container border rounded">
-                            <iframe 
-                                src="{{ url_for('view_task_file', assignment_id=assignment.id) }}#toolbar=1&navpanes=1&scrollbar=1" 
+                            <iframe
+                                src="{{ url_for('view_task_file', assignment_id=assignment.id) }}#toolbar=1&navpanes=1&scrollbar=1"
                                 class="pdf-viewer"
                                 type="application/pdf">
-                                <p>Your browser does not support PDFs. 
+                                <p>Your browser does not support PDFs.
                                     <a href="{{ url_for('download_task_file', assignment_id=assignment.id) }}">Download the PDF</a> instead.
                                 </p>
                             </iframe>
@@ -145,36 +154,33 @@
                         </div>
                     </div>
                     {% elif assignment.filename %}
-                    <!-- Show preview for images -->
-                    {% if assignment.filename.lower().endswith(('.jpg', '.jpeg', '.png', '.gif')) %}
-                    <div class="mb-4">
-                        <h5 class="text-primary mb-3">
-                            <i class="fas fa-image"></i> Image Preview
-                        </h5>
-                        <div class="text-center border rounded p-3 bg-light">
-                            <img src="{{ url_for('view_task_file', assignment_id=assignment.id) }}" 
-                                 class="img-fluid rounded shadow-sm" 
-                                 style="max-height: 500px;"
-                                 alt="Uploaded file">
+                        {% if assignment.filename.lower().endswith(('.jpg', '.jpeg', '.png', '.gif')) %}
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3">
+                                <i class="fas fa-image"></i> Image Preview
+                            </h5>
+                            <div class="text-center border rounded p-3 bg-light">
+                                <img src="{{ url_for('view_task_file', assignment_id=assignment.id) }}"
+                                     class="img-fluid rounded shadow-sm"
+                                     style="max-height: 500px;"
+                                     alt="Uploaded file">
+                            </div>
                         </div>
-                    </div>
-                    {% else %}
-                    <!-- Other file types - just show download option -->
-                    <div class="mb-4">
-                        <div class="alert alert-info">
-                            <i class="fas fa-file"></i> File uploaded: <strong>{{ assignment.filename }}</strong>
-                            <br>
-                            <small>Click the download button above to view this file.</small>
+                        {% else %}
+                        <div class="mb-4">
+                            <div class="alert alert-info">
+                                <i class="fas fa-file"></i> File uploaded: <strong>{{ assignment.filename }}</strong><br>
+                                <small>Click the download button above to view this file.</small>
+                            </div>
                         </div>
-                    </div>
-                    {% endif %}
+                        {% endif %}
                     {% endif %}
 
                     <!-- Comments/Feedback -->
                     {% if assignment.comments %}
                     <div class="alert alert-info mb-4">
                         <h6 class="alert-heading">
-                            <i class="fas fa-comments"></i> 
+                            <i class="fas fa-comments"></i>
                             {% if current_user.role in ['board', 'admin'] %}
                                 Student's Comments
                             {% else %}
@@ -187,89 +193,65 @@
 
                     <hr>
 
-                    <!-- VOLUNTEER VIEW: Completion Form (only if status is "pending") -->
+                    <!-- VOLUNTEER: Completion Form -->
                     {% if assignment.status == 'pending' and current_user.id == assignment.user_id %}
                     <div class="bg-light p-4 rounded">
                         <h5 class="text-success mb-3">
                             <i class="fas fa-tasks"></i> Mark as Complete
                         </h5>
-
                         <form method="POST" action="{{ url_for('complete_task', assignment_id=assignment.id) }}" enctype="multipart/form-data">
-                            
-                            <!-- File Upload (only for projects that require upload) -->
                             {% if task.classification == 'project' and assignment.upload %}
                             <div class="mb-3">
                                 <label for="completionFile" class="form-label fw-bold">
-                                    <i class="fas fa-upload"></i> Upload File 
-                                    <span class="text-danger">*</span>
+                                    <i class="fas fa-upload"></i> Upload File <span class="text-danger">*</span>
                                 </label>
-                                <input 
-                                    type="file" 
-                                    class="form-control" 
-                                    id="completionFile" 
-                                    name="completion_file" 
-                                    required>
-                                <small class="form-text text-muted">
-                                    Accepted formats: PDF, DOC, DOCX, JPG, PNG
-                                </small>
+                                <input type="file" class="form-control" id="completionFile" name="completion_file" required>
+                                <small class="form-text text-muted">Accepted formats: PDF, DOC, DOCX, JPG, PNG</small>
                             </div>
                             {% endif %}
 
-                            <!-- Completion Comments -->
                             <div class="mb-3">
                                 <label for="completionComments" class="form-label fw-bold">
                                     Completion Comments (Optional)
                                 </label>
-                                <textarea 
-                                    class="form-control" 
-                                    id="completionComments" 
-                                    name="completion_comments" 
-                                    rows="3" 
-                                    placeholder="Add any notes about how you completed this task...">{{ assignment.comments }}</textarea>
-                                <small class="form-text text-muted">
-                                    Explain what you did to complete this task.
-                                </small>
+                                <textarea class="form-control" id="completionComments" name="completion_comments"
+                                          rows="3" placeholder="Add any notes about how you completed this task..."></textarea>
+                                <small class="form-text text-muted">Explain what you did to complete this task.</small>
                             </div>
 
-                            <!-- Submit Button -->
                             <div class="d-grid gap-2">
                                 <button type="submit" class="btn btn-success btn-lg">
-                                    <i class="fas fa-check-circle"></i> 
-                                    Submit for Review
+                                    <i class="fas fa-check-circle"></i> Submit for Review
                                 </button>
                             </div>
                         </form>
                     </div>
 
-                    <!-- VOLUNTEER VIEW: Already Submitted Message -->
+                    <!-- VOLUNTEER: Already Submitted -->
                     {% elif assignment.status == 'done' and current_user.id == assignment.user_id %}
                     <div class="alert alert-info">
                         <h5 class="alert-heading">
                             <i class="fas fa-hourglass-half"></i> Submitted and Pending Review
                         </h5>
-                        <p class="mb-0">
-                            You've submitted this task for review. A board member will grade it soon.
-                        </p>
+                        <p class="mb-0">You've submitted this task for review. A board member will grade it soon.</p>
                     </div>
 
-                    <!-- VOLUNTEER VIEW: Graded Message -->
+                    <!-- VOLUNTEER: Graded -->
                     {% elif assignment.status == 'graded' and current_user.id == assignment.user_id %}
                     <div class="alert alert-success">
                         <h5 class="alert-heading">
                             <i class="fas fa-check-circle"></i> Task Graded!
                         </h5>
-                        <p class="mb-2">
-                            This task has been reviewed and graded by the board.
-                        </p>
+                        <p class="mb-2">This task has been reviewed and graded by the board.</p>
                         {% if assignment.score is not none %}
                         <p class="mb-0">
-                            <strong>Your Score:</strong> 
+                            <strong>Your Score:</strong>
                             <span class="badge bg-success fs-6">{{ assignment.score }}</span>
                         </p>
                         {% endif %}
                     </div>
 
-                    <!-- BOARD/ADMIN VIEW: Grading Form (only if status is "done") -->
+                    <!-- BOARD/ADMIN: Grading Form -->
                     {% elif assignment.status == 'done' and current_user.role in ['board', 'admin'] %}
                     <div class="bg-warning bg-opacity-10 p-4 rounded border border-warning">
                         <h5 class="text-warning mb-3">
@@ -277,69 +259,73 @@
                         </h5>
 
                         <form method="POST" action="{{ url_for('grade_task', assignment_id=assignment.id) }}">
-                            
-                            <!-- Student Info -->
                             <div class="alert alert-secondary mb-3">
                                 <strong>Student:</strong> {{ assignment.user.name }}<br>
                                 <strong>Submitted:</strong> {{ assignment.due_date.strftime('%B %d, %Y') }}
                             </div>
 
-                            <!-- Score Input -->
                             <div class="mb-3">
-                                <label for="score" class="form-label fw-bold">
-                                    Score (Optional)
-                                </label>
-                                <input type="number" 
-                                       class="form-control" 
-                                       id="score" 
-                                       name="score" 
-                                       step="0.1" 
-                                       min="0" 
-                                       max="100"
-                                       placeholder="e.g., 95">
-                                <small class="form-text text-muted">
-                                    Enter a score out of 100, or leave blank.
-                                </small>
+                                <label for="score" class="form-label fw-bold">Score (Optional)</label>
+                                <input type="number" class="form-control" id="score" name="score"
+                                       step="0.1" min="0" max="100" placeholder="e.g., 95">
+                                <small class="form-text text-muted">Enter a score out of 100, or leave blank.</small>
                             </div>
 
-                            <!-- Feedback -->
                             <div class="mb-3">
-                                <label for="feedback" class="form-label fw-bold">
-                                    Feedback (Optional)
-                                </label>
-                                <textarea 
-                                    class="form-control" 
-                                    id="feedback" 
-                                    name="feedback" 
-                                    rows="4"
-                                    placeholder="Provide feedback to the student..."></textarea>
+                                <label for="feedback" class="form-label fw-bold">Feedback (Optional)</label>
+                                <textarea class="form-control" id="feedback" name="feedback" rows="4"
+                                          placeholder="Provide feedback to the student..."></textarea>
                             </div>
 
-                            <!-- Submit Button -->
-                            <div class="d-grid gap-2">
+                            <div class="d-grid">
                                 <button type="submit" class="btn btn-warning btn-lg">
-                                    <i class="fas fa-check"></i> 
-                                    Submit Grade & Mark as Complete
+                                    <i class="fas fa-check"></i> Submit Grade & Mark as Complete
+                                </button>
+                            </div>
+                        </form>
+
+                        <hr>
+
+                        <!-- Send Back Form -->
+                        <form method="POST" action="{{ url_for('grade_task', assignment_id=assignment.id) }}">
+                            <input type="hidden" name="send_back" value="true">
+
+                            <h6 class="text-danger mb-3">↩ Send Back for Revision</h6>
+
+                            <div class="mb-3">
+                                <label for="new_due_date" class="form-label fw-bold">New Due Date (Optional)</label>
+                                <input type="date" class="form-control" id="new_due_date" name="new_due_date"
+                                       value="{{ assignment.due_date.strftime('%Y-%m-%d') }}">
+                                <small class="form-text text-muted">Leave as-is or set a new deadline for the student.</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="send_back_reason" class="form-label fw-bold">Reason (Optional)</label>
+                                <textarea class="form-control" id="send_back_reason" name="send_back_reason" rows="3"
+                                          placeholder="Explain what needs to be revised..."></textarea>
+                            </div>
+
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-danger">
+                                    ↩ Send Back to Student
                                 </button>
                             </div>
                         </form>
                     </div>
 
-                    <!-- BOARD/ADMIN VIEW: Already Graded -->
+                    <!-- BOARD/ADMIN: Already Graded -->
                     {% elif assignment.status == 'graded' and current_user.role in ['board', 'admin'] %}
                     <div class="alert alert-success">
                         <h5 class="alert-heading">
                             <i class="fas fa-check-circle"></i> Task Already Graded
                         </h5>
-                        <p class="mb-0">
-                            This task has been reviewed and graded.
-                        </p>
+                        <p class="mb-0">This task has been reviewed and graded.</p>
                     </div>
                     {% endif %}
 
                 </div>
 
-                <!-- Footer with Close Button -->
+                <!-- Footer -->
                 <div class="card-footer bg-light">
                     <div class="d-grid">
                         <a href="{% if current_user.role in ['board', 'admin'] %}{{ url_for('task_status') }}{% else %}{{ url_for('my_tasks') }}{% endif %}" class="btn btn-outline-secondary">
@@ -357,23 +343,16 @@
     .bg-gradient {
         background: linear-gradient(135deg, var(--bs-primary) 0%, var(--bs-primary-dark, #0056b3) 100%);
     }
-    
+
     .card {
         animation: slideIn 0.3s ease-out;
     }
-    
+
     @keyframes slideIn {
-        from {
-            opacity: 0;
-            transform: translateY(-20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        from { opacity: 0; transform: translateY(-20px); }
+        to   { opacity: 1; transform: translateY(0); }
     }
 
-    /* PDF Viewer Styles */
     .pdf-viewer-container {
         background-color: #525659;
         padding: 0;
@@ -388,14 +367,10 @@
         display: block;
     }
 
-    /* Responsive PDF viewer */
     @media (max-width: 768px) {
-        .pdf-viewer {
-            height: 400px;
-        }
+        .pdf-viewer { height: 400px; }
     }
 
-    /* Image preview styles */
     .img-fluid {
         max-width: 100%;
         height: auto;

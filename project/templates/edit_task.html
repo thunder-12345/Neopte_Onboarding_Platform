@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow">
+                <div class="card-header bg-secondary text-dark">
+                    <h3 class="mb-0">
+                        <i class="fas fa-edit"></i> Edit Task: {{ task.title }}
+                    </h3>
+                </div>
+                <div class="card-body">
+
+                    {% with messages = get_flashed_messages() %}
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert alert-info alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form method="POST" action="{{ url_for('edit_task', task_id=task.id) }}">
+                        {{ form.hidden_tag() }}
+
+                        <h5 class="mb-3 text-warning">Task Information</h5>
+
+                        <!-- Title -->
+                        <div class="mb-3">
+                            {{ form.title.label(class="form-label fw-bold") }}
+                            {{ form.title(class="form-control", value=task.title) }}
+                            {% if form.title.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.title.errors %}<small>{{ error }}</small><br>{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label fw-bold") }}
+                            <textarea class="form-control" name="description" rows="4">{{ task.description }}</textarea>
+                            {% if form.description.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.description.errors %}<small>{{ error }}</small><br>{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Classification -->
+                        <div class="mb-3">
+                            {{ form.classification.label(class="form-label fw-bold") }}
+                            <select class="form-select" name="classification" id="classificationSelect">
+                                <option value="project" {% if task.classification == 'project' %}selected{% endif %}>Project</option>
+                                <option value="reminder" {% if task.classification == 'reminder' %}selected{% endif %}>Reminder</option>
+                            </select>
+                        </div>
+
+                        <!-- Recurring Section (reminders only) -->
+                        <div id="recurringSection" class="{% if task.classification == 'reminder' %}d-block{% else %}d-none{% endif %}">
+                            <hr class="my-4">
+                            <h5 class="mb-3 text-info"><i class="fas fa-redo"></i> Recurring Options</h5>
+
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="is_recurring" id="isRecurringCheck"
+                                           {% if task.is_recurring %}checked{% endif %}>
+                                    <label class="form-check-label" for="isRecurringCheck">Make this a recurring reminder</label>
+                                </div>
+                            </div>
+
+                            <div id="recurrenceDetails" class="{% if task.is_recurring %}d-block{% else %}d-none{% endif %}">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Recurrence Frequency</label>
+                                    <select class="form-select" name="recurrence_frequency">
+                                        <option value="">-- Select Frequency --</option>
+                                        <option value="daily" {% if task.recurrence_frequency == 'daily' %}selected{% endif %}>Daily</option>
+                                        <option value="weekly" {% if task.recurrence_frequency == 'weekly' %}selected{% endif %}>Weekly</option>
+                                        <option value="biweekly" {% if task.recurrence_frequency == 'biweekly' %}selected{% endif %}>Every 2 Weeks</option>
+                                        <option value="monthly" {% if task.recurrence_frequency == 'monthly' %}selected{% endif %}>Monthly</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Stop recurring after</label>
+                                    <input type="date" class="form-control" name="recurrence_end_date"
+                                           value="{{ task.recurrence_end_date.strftime('%Y-%m-%d') if task.recurrence_end_date else '' }}">
+                                </div>
+                            </div>
+
+                            <!-- Skip Review -->
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="skip_review" id="skipReview"
+                                           {% if task.skip_review %}checked{% endif %}>
+                                    <label class="form-check-label" for="skipReview">Skip review (auto-complete when marked done)</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+                        <h5 class="mb-3 text-warning">Assignment Details</h5>
+
+                        <!-- Due Date (applies to all assignments) -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Update Due Date for All Assignments</label>
+                            <input type="date" class="form-control" name="due_date"
+                                   value="{{ task.assignments[0].due_date.strftime('%Y-%m-%d') if task.assignments else '' }}">
+                            <small class="form-text text-muted">This will update the due date for all assignments of this task.</small>
+                        </div>
+
+                        <!-- Upload Required -->
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="upload_required" id="uploadRequired"
+                                       {% if task.assignments and task.assignments[0].upload %}checked{% endif %}>
+                                <label class="form-check-label" for="uploadRequired">Upload Required</label>
+                            </div>
+                            <small class="form-text text-muted">This will update upload requirement for all assignments.</small>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-warning btn-lg">
+                                <i class="fas fa-save"></i> Save Changes
+                            </button>
+                            <a href="{{ url_for('task_status') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const classificationSelect = document.getElementById('classificationSelect');
+    const recurringSection = document.getElementById('recurringSection');
+    const isRecurringCheck = document.getElementById('isRecurringCheck');
+    const recurrenceDetails = document.getElementById('recurrenceDetails');
+
+    function toggleRecurringSection() {
+        if (classificationSelect.value === 'reminder') {
+            recurringSection.classList.remove('d-none');
+            recurringSection.classList.add('d-block');
+        } else {
+            recurringSection.classList.remove('d-block');
+            recurringSection.classList.add('d-none');
+            if (isRecurringCheck) {
+                isRecurringCheck.checked = false;
+                recurrenceDetails.classList.remove('d-block');
+                recurrenceDetails.classList.add('d-none');
+            }
+        }
+    }
+
+    function toggleRecurrenceDetails() {
+        if (isRecurringCheck.checked) {
+            recurrenceDetails.classList.remove('d-none');
+            recurrenceDetails.classList.add('d-block');
+        } else {
+            recurrenceDetails.classList.remove('d-block');
+            recurrenceDetails.classList.add('d-none');
+        }
+    }
+
+    classificationSelect.addEventListener('change', toggleRecurringSection);
+    if (isRecurringCheck) isRecurringCheck.addEventListener('change', toggleRecurrenceDetails);
+});
+</script>
+
+{% endblock %}
