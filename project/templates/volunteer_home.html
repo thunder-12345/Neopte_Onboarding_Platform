@@ -12,11 +12,11 @@
   {% if current_user.is_authenticated %}
   <div class="welcome-banner">
     <div class="welcome-content">
-      <h1>Welcome back, {{ current_user.name }}! 👋</h1>
-      <p>Thank you for your dedication as a volunteer!</p>
+      <h1>Volunteer Portal</h1>
+      <p>Welcome back, {{ current_user.name }}.</p>
     </div>
     <div class="logo-badge">
-      <img src="{{ url_for('static', filename = 'neopte logo.jpg') }}" alt="Neopte">
+      <img src="{{ url_for('static', filename = 'neopte logo.png') }}" alt="Neopte">
     </div>
   </div>
   {% endif %}
