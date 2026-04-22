@@ -1,4 +1,6 @@
 import os
+from dotenv import load_dotenv
+load_dotenv()
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
@@ -9,18 +11,15 @@ from flask_login import LoginManager
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
 # Set up configuration for SQLAlchemy and secret key
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///project.db" 
+# app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///project.db"
 
-# uri = os.environ.get("DATABASE_URL")
+uri = os.environ.get("DATABASE_URL", "sqlite:///project.db")
+if uri.startswith("postgres://"):
+    uri = uri.replace("postgres://", "postgresql://", 1)
+app.config["SQLALCHEMY_DATABASE_URI"] = uri
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-# if uri and uri.startswith("postgres://"):
-#     uri = uri.replace("postgres://", "postgresql://", 1)
-
-# app.config["SQLALCHEMY_DATABASE_URI"] = uri
-# app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
-
-app.config['SECRET_KEY'] = 'mysecretkey'
+app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY", "mysecretkey")
 
 # Configure the upload folder for file uploads
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploads')
