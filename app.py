@@ -56,10 +56,10 @@ with app.app_context():
             jordanAdmin = User(
                 name="Jordan",
                 email="jordan@neoptefoundation.org",
-                password="temppass",   # password hashed in User model
-                role="admin",
-                picture="default.jpeg"
+                password="temppass"   # password hashed in User model
             )
+            jordanAdmin.role = "admin"
+            jordanAdmin.picture = "default.jpeg"
             db.session.add(jordanAdmin)
             db.session.commit()
             print("Jordan admin created: jordan@neoptefoundation.org / temppass")
