@@ -47,63 +47,25 @@ for i in range(1, 21):
     role = random.choice(roles)
     users_data.append({"name": name, "email": email, "password": password, "role": role})
 
-# Create admin and real admin users if they don't exist, and add generated users to the database
+# Create admin users if they don't exist — wrapped in try/except so it skips
+# gracefully if tables haven't been created yet (e.g. during flask db upgrade)
 with app.app_context():
-    # admin = User.query.filter_by(email="admin@example.com").first()
-    # if not admin:
-    #     admin = User(
-    #         name="Admin User",
-    #         email="admin@example.com",
-    #         password="admin123",   # password hashed in User model
-    #         picture="default.jpeg",
-    #         role="board"
-    #     )
-    #     print(admin.role)
-    #     db.session.add(admin)
-    #     db.session.commit()
-    #     print("Admin user created: admin@example.com / admin123")
-
-    # realAdmin = User.query.filter_by(email="realadmin@gmail.com").first()
-    # if not realAdmin:
-    #     realAdmin = User(
-    #         name="REAL ADMIN",
-    #         email="realadmin@gmail.com",
-    #         password="admin123",   # password hashed in User model
-    #         role="admin",
-    #         picture="default.jpeg"
-    #     )
-    #     print(realAdmin.role)
-    #     db.session.add(realAdmin)
-    #     db.session.commit()
-    #     print("realAdmin user created: realadmin@gmail.com / admin123")
-
-    jordanAdmin = User.query.filter_by(email="jordan@neoptefoundation.org").first()
-    if not jordanAdmin:
-        jordanAdmin = User(
-            name="Jordan",
-            email="jordan@neoptefoundation.org",
-            password="temppass",   # password hashed in User model
-            role="admin",
-            picture="default.jpeg"
-        )
-        db.session.add(jordanAdmin)
-        db.session.commit()
-        print("Jordan admin created: jordan@neoptefoundation.org / temppass")
-
-    # for u in users_data:
-    #     # Avoid duplicates
-    #     if not User.query.filter_by(email=u["email"]).first():
-    #         user = User(
-    #             name=u["name"],
-    #             email=u["email"],
-    #             password=u["password"],
-    #             picture="default.jpeg",
-    #             role=u["role"], 
-    #         )
-    #         db.session.add(user)
-    #         print(f"Adding {u['name']} ({u['role']})")
-    # db.session.commit()
-    # print("20 users added successfully!")
+    try:
+        jordanAdmin = User.query.filter_by(email="jordan@neoptefoundation.org").first()
+        if not jordanAdmin:
+            jordanAdmin = User(
+                name="Jordan",
+                email="jordan@neoptefoundation.org",
+                password="temppass",   # password hashed in User model
+                role="admin",
+                picture="default.jpeg"
+            )
+            db.session.add(jordanAdmin)
+            db.session.commit()
+            print("Jordan admin created: jordan@neoptefoundation.org / temppass")
+    except Exception as e:
+        db.session.rollback()
+        print(f"Seeding skipped (tables not ready yet): {e}")
 
 # Route to upgrade a user's role (accessible by board and admin roles)
 @app.route("/upgrade/user", methods=["POST"])
