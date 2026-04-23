@@ -134,6 +134,7 @@ class TaskAssignment(db.Model):
     upload: Mapped[bool] = mapped_column(default=False) 
     filename: Mapped[str] = mapped_column(nullable=True)
     score: Mapped[float] = mapped_column(nullable=True)
+    score_denominator: Mapped[float] = mapped_column(nullable=True)
     comments: Mapped[str] = mapped_column(default="")
     
     # Relationships

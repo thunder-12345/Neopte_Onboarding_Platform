@@ -357,7 +357,7 @@
                                         </h6>
                                         {% if assignment.score is not none %}
                                             <span class="badge bg-light text-success">
-                                                <i class="fas fa-star"></i> {{ assignment.score }}
+                                                <i class="fas fa-star"></i> {{ assignment.score }}{% if assignment.score_denominator is not none %} / {{ assignment.score_denominator }}{% endif %}
                                             </span>
                                         {% endif %}
                                     </div>
@@ -369,8 +369,8 @@
                                     </p>
                                     {% if assignment.score is not none %}
                                     <p class="mb-1">
-                                        <i class="fas fa-award"></i> 
-                                        <strong>Score:</strong> {{ assignment.score }}
+                                        <i class="fas fa-award"></i>
+                                        <strong>Score:</strong> {{ assignment.score }}{% if assignment.score_denominator is not none %} / {{ assignment.score_denominator }}{% endif %}
                                     </p>
                                     {% endif %}
                                     {% if assignment.comments %}

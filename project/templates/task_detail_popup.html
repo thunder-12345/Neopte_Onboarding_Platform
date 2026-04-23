@@ -59,7 +59,7 @@
 
                         {% if assignment.status == 'graded' and assignment.score is not none %}
                             <span class="badge bg-success fs-6 px-3 py-2 ms-2">
-                                <i class="fas fa-star"></i> Score: {{ assignment.score }}
+                                <i class="fas fa-star"></i> Score: {{ assignment.score }}{% if assignment.score_denominator is not none %} / {{ assignment.score_denominator }}{% endif %}
                             </span>
                         {% endif %}
                     </div>
@@ -265,10 +265,15 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="score" class="form-label fw-bold">Score (Optional)</label>
-                                <input type="number" class="form-control" id="score" name="score"
-                                       step="0.1" min="0" max="100" placeholder="e.g., 95">
-                                <small class="form-text text-muted">Enter a score out of 100, or leave blank.</small>
+                                <label class="form-label fw-bold">Score (Optional)</label>
+                                <div class="d-flex align-items-center gap-2">
+                                    <input type="number" class="form-control" id="score" name="score"
+                                           step="0.1" min="0" placeholder="e.g., 85">
+                                    <span class="fw-bold fs-5">/</span>
+                                    <input type="number" class="form-control" id="score_denominator" name="score_denominator"
+                                           step="0.1" min="0" placeholder="e.g., 100">
+                                </div>
+                                <small class="form-text text-muted">Enter numerator / denominator, or leave blank.</small>
                             </div>
 
                             <div class="mb-3">

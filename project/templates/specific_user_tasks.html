@@ -417,7 +417,7 @@
                             <span class="task-type">{{ assignment.task.classification.title() }}</span>
                             <span class="task-date">📅 {{ assignment.due_date.strftime('%b %d, %Y') if assignment.due_date else 'No date' }}</span>
                             {% if assignment.score is not none %}
-                            <span class="task-date">⭐ Score: {{ assignment.score }}</span>
+                            <span class="task-date">⭐ Score: {{ assignment.score }}{% if assignment.score_denominator is not none %} / {{ assignment.score_denominator }}{% endif %}</span>
                             {% endif %}
                         </div>
                     </div>

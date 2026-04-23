@@ -47,9 +47,36 @@ for i in range(1, 21):
     role = random.choice(roles)
     users_data.append({"name": name, "email": email, "password": password, "role": role})
 
-# Create admin users if they don't exist — wrapped in try/except so it skips
-# gracefully if tables haven't been created yet (e.g. during flask db upgrade)
+# Create admin and real admin users if they don't exist, and add generated users to the database
 with app.app_context():
+    # admin = User.query.filter_by(email="admin@example.com").first()
+    # if not admin:
+    #     admin = User(
+    #         name="Admin User",
+    #         email="admin@example.com",
+    #         password="admin123",   # password hashed in User model
+    #         picture="default.jpeg",
+    #         role="board"
+    #     )
+    #     print(admin.role)
+    #     db.session.add(admin)
+    #     db.session.commit()
+    #     print("Admin user created: admin@example.com / admin123")
+
+    # realAdmin = User.query.filter_by(email="realadmin@gmail.com").first()
+    # if not realAdmin:
+    #     realAdmin = User(
+    #         name="REAL ADMIN",
+    #         email="realadmin@gmail.com",
+    #         password="admin123",   # password hashed in User model
+    #         role="admin",
+    #         picture="default.jpeg"
+    #     )
+    #     print(realAdmin.role)
+    #     db.session.add(realAdmin)
+    #     db.session.commit()
+    #     print("realAdmin user created: realadmin@gmail.com / admin123")
+
     try:
         jordanAdmin = User.query.filter_by(email="jordan@neoptefoundation.org").first()
         if not jordanAdmin:
@@ -66,6 +93,21 @@ with app.app_context():
     except Exception as e:
         db.session.rollback()
         print(f"Seeding skipped (tables not ready yet): {e}")
+
+    # for u in users_data:
+    #     # Avoid duplicates
+    #     if not User.query.filter_by(email=u["email"]).first():
+    #         user = User(
+    #             name=u["name"],
+    #             email=u["email"],
+    #             password=u["password"],
+    #             picture="default.jpeg",
+    #             role=u["role"], 
+    #         )
+    #         db.session.add(user)
+    #         print(f"Adding {u['name']} ({u['role']})")
+    # db.session.commit()
+    # print("20 users added successfully!")
 
 # Route to upgrade a user's role (accessible by board and admin roles)
 @app.route("/upgrade/user", methods=["POST"])
@@ -1316,10 +1358,13 @@ def grade_task(assignment_id):
 
     # Normal grading flow
     score = request.form.get("score", type=float)
+    score_denominator = request.form.get("score_denominator", type=float)
     feedback = request.form.get("feedback", type=str)
 
     if score is not None:
         assignment.score = score
+    if score_denominator is not None:
+        assignment.score_denominator = score_denominator
 
     if feedback:
         if assignment.comments:
@@ -1337,6 +1382,7 @@ def grade_task(assignment_id):
         details={
             "task_title": task.title,
             "score": score,
+            "score_denominator": score_denominator,
             "old_status": old_status,
             "user_id": assignment.user_id
         }
