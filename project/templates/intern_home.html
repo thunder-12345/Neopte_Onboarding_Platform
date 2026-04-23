@@ -163,7 +163,7 @@
               {% if assignment.status == 'graded' and assignment.score is not none %}
                 <div class="grade-display">
                   <span class="grade-value">{{ assignment.score }}</span>
-                  <span class="grade-total">/100</span>
+                  <span class="grade-total">/ {% if assignment.score_denominator is not none %}{{ assignment.score_denominator }}{% else %}100{% endif %}</span>
                 </div>
               {% elif assignment.status == 'graded' %}
                 <span class="grade-complete">✓ Complete</span>
