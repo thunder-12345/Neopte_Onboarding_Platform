@@ -577,7 +577,6 @@ def register():
             flash("You have successfully registered!", "success")
             return redirect(url_for("login"))
         else:
-            flash("Error")
             print("Form errors:", form.errors)
 
     return render_template('register.html', form=form) 

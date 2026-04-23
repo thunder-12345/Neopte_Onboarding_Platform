@@ -10,13 +10,27 @@
 
         <div>
           {{ form.email.label }}
-          {{ form.email() }}
+          {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else "")) }}
+          {% for error in form.email.errors %}
+            <small style="color: red;">{{ error }}</small>
+          {% endfor %}
         </div>
 
         <div>
           {{ form.password.label }}
-          {{ form.password() }}
+          {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else "")) }}
+          {% for error in form.password.errors %}
+            <small style="color: red;">{{ error }}</small>
+          {% endfor %}
         </div>
+
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            {% for message in messages %}
+              <small style="color: red;">{{ message }}</small>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
 
         <div>
           {{ form.submit() }}
