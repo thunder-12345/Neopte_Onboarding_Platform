@@ -1781,7 +1781,11 @@ def generate_grades_report(user):
         pdf.setFillColor(colors.HexColor('#2d3748'))
         if assignment.status == 'graded' and assignment.score is not None:
             pdf.setFont("Helvetica-Bold", 9)
-            pdf.drawString(6.5*inch, y_pos - 0.2*inch, f"{assignment.score:.1f}")
+            if assignment.score_denominator is not None:
+                grade_text = f"{assignment.score:.1f} / {assignment.score_denominator:.1f}"
+            else:
+                grade_text = f"{assignment.score:.1f}"
+            pdf.drawString(6.5*inch, y_pos - 0.2*inch, grade_text)
         elif assignment.status == 'graded':
             pdf.setFont("Helvetica", 8)
             pdf.drawString(6.5*inch, y_pos - 0.2*inch, "Complete")
