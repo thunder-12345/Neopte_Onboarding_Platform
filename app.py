@@ -212,8 +212,81 @@ def board_dashboard():
 @login_required
 @permission_required('admin')
 def admin_dashboard():
-    user = User.query.all()  # Get all users
-    return render_template("admin_home.html", user = user)
+    from sqlalchemy import func, extract
+
+    # Org-wide counts
+    total_interns    = User.query.filter_by(role='intern').count()
+    total_volunteers = User.query.filter_by(role='volunteer').count()
+    total_board      = User.query.filter_by(role='board').count()
+    unassigned_users = User.query.filter_by(role='user').all()
+
+    # Pending approval counts
+    pending_hours_count = Hours.query.filter_by(status='Pending').count()
+    pending_docs_count  = Document.query.filter_by(status='Pending').count()
+    pending_tasks_count = TaskAssignment.query.filter_by(status='done').count()
+    total_pending_approvals = pending_hours_count + pending_docs_count + pending_tasks_count
+
+    # Hours overview
+    approved_hours_total = db.session.query(func.sum(Hours.amount)).filter(Hours.status == 'Approved').scalar() or 0.0
+    pending_hours_total  = db.session.query(func.sum(Hours.amount)).filter(Hours.status == 'Pending').scalar() or 0.0
+
+    today = date.today()
+    top_contributors = (
+        db.session.query(User, func.sum(Hours.amount).label('month_hours'))
+        .join(Hours, Hours.user_id == User.id)
+        .filter(
+            Hours.status == 'Approved',
+            extract('month', Hours.date) == today.month,
+            extract('year',  Hours.date) == today.year,
+        )
+        .group_by(User.id)
+        .order_by(func.sum(Hours.amount).desc())
+        .limit(5)
+        .all()
+    )
+
+    # Intern progress
+    interns = User.query.filter_by(role='intern').all()
+    intern_data = []
+    for intern in interns:
+        assignments = intern.task_assignments
+        total_t   = len(assignments)
+        done_t    = sum(1 for a in assignments if a.status == 'graded')
+        pending_t = sum(1 for a in assignments if a.status == 'pending')
+        scored    = [a for a in assignments if a.status == 'graded' and a.score is not None and a.score_denominator]
+        avg_pct   = round(sum(a.score / a.score_denominator * 100 for a in scored) / len(scored), 1) if scored else None
+        intern_data.append({
+            'user': intern,
+            'total': total_t,
+            'done': done_t,
+            'pending': pending_t,
+            'avg_grade': avg_pct,
+        })
+
+    all_total = sum(d['total'] for d in intern_data)
+    all_done  = sum(d['done']  for d in intern_data)
+    intern_completion_rate = round(all_done / all_total * 100, 1) if all_total > 0 else 0
+
+    # Recent activity
+    recent_logs = ActivityLog.query.order_by(ActivityLog.created_at.desc()).limit(10).all()
+
+    return render_template(
+        "admin_home.html",
+        total_interns=total_interns,
+        total_volunteers=total_volunteers,
+        total_board=total_board,
+        total_pending_approvals=total_pending_approvals,
+        pending_hours_count=pending_hours_count,
+        pending_docs_count=pending_docs_count,
+        pending_tasks_count=pending_tasks_count,
+        unassigned_users=unassigned_users,
+        approved_hours_total=approved_hours_total,
+        pending_hours_total=pending_hours_total,
+        top_contributors=top_contributors,
+        intern_data=intern_data,
+        intern_completion_rate=intern_completion_rate,
+        recent_logs=recent_logs,
+    )
 
 @app.route("/specific/log/hours", methods=["GET", "POST"])
 @login_required

@@ -1,19 +1,318 @@
 {% extends "base.html" %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/adminhome.css') }}">
+{% endblock %}
+
 {% block content %}
+<div class="admin-dashboard">
 
-<div class="jumbotron">
-  {% if current_user.is_authenticated %}
-    <div class="alert alert-primary" role="alert">
-    Hi {{ current_user.name }}. You are an admin!
+  <!-- Page Header -->
+  <div class="admin-header-card">
+    <div class="admin-header-left">
+      <div class="admin-header-logo">
+        <img src="{{ url_for('static', filename='neopte logo.png') }}" alt="Neopte Foundation">
+      </div>
+      <div class="admin-header-title">
+        <h1>Admin Dashboard</h1>
+        <p>Neopte Foundation — Executive Overview</p>
+      </div>
     </div>
-  {% else %}
-    <p>Please login or register!</p>
-  {% endif %}
-
-  <div class="image-container">
-    <img src="{{ url_for('static', filename = 'neopte logo.png') }}" alt="Neopte">
+    <div class="admin-header-meta">
+      Today
+      <span>{{ now().strftime('%B %d, %Y') }}</span>
+    </div>
   </div>
+
+  <!-- Org-Wide Stats -->
+  <div class="stats-grid-4">
+    <div class="stat-card-admin">
+      <div class="stat-icon interns">👩‍💼</div>
+      <div class="stat-info">
+        <p class="stat-label">Interns</p>
+        <p class="stat-value">{{ total_interns }}</p>
+      </div>
+    </div>
+    <div class="stat-card-admin">
+      <div class="stat-icon volunteers">🤝</div>
+      <div class="stat-info">
+        <p class="stat-label">Volunteers</p>
+        <p class="stat-value">{{ total_volunteers }}</p>
+      </div>
+    </div>
+    <div class="stat-card-admin">
+      <div class="stat-icon board">🏛️</div>
+      <div class="stat-info">
+        <p class="stat-label">Board Members</p>
+        <p class="stat-value">{{ total_board }}</p>
+      </div>
+    </div>
+    <div class="stat-card-admin {% if total_pending_approvals > 0 %}urgent{% endif %}">
+      <div class="stat-icon pending">⚠️</div>
+      <div class="stat-info">
+        <p class="stat-label">Pending Approvals</p>
+        <p class="stat-value">{{ total_pending_approvals }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Action Items Inbox -->
+  <div class="admin-section">
+    <div class="admin-section-header">
+      <div class="admin-section-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0"></path>
+        </svg>
+      </div>
+      <div>
+        <h2>Action Items</h2>
+        <p>Items awaiting your attention</p>
+      </div>
+    </div>
+
+    <div class="inbox-list">
+      <a href="{{ url_for('pending_hours') }}" class="inbox-item {% if pending_hours_count == 0 %}muted{% else %}danger{% endif %}">
+        <div class="inbox-badge {% if pending_hours_count > 0 %}has-items{% else %}clear{% endif %}">
+          {{ pending_hours_count }}
+        </div>
+        <span class="inbox-label">Hours submissions awaiting approval</span>
+        <span class="inbox-arrow">›</span>
+      </a>
+
+      <a href="{{ url_for('pending_documents') }}" class="inbox-item {% if pending_docs_count == 0 %}muted{% else %}danger{% endif %}">
+        <div class="inbox-badge {% if pending_docs_count > 0 %}has-items{% else %}clear{% endif %}">
+          {{ pending_docs_count }}
+        </div>
+        <span class="inbox-label">Documents awaiting review</span>
+        <span class="inbox-arrow">›</span>
+      </a>
+
+      <a href="{{ url_for('task_status') }}" class="inbox-item {% if pending_tasks_count == 0 %}muted{% else %}danger{% endif %}">
+        <div class="inbox-badge {% if pending_tasks_count > 0 %}has-items{% else %}clear{% endif %}">
+          {{ pending_tasks_count }}
+        </div>
+        <span class="inbox-label">Task submissions awaiting grading</span>
+        <span class="inbox-arrow">›</span>
+      </a>
+
+      <a href="{{ url_for('user_list', filter_by='role', search_query='user') }}" class="inbox-item {% if unassigned_users|length == 0 %}muted{% else %}danger{% endif %}">
+        <div class="inbox-badge {% if unassigned_users|length > 0 %}has-items{% else %}clear{% endif %}">
+          {{ unassigned_users|length }}
+        </div>
+        <span class="inbox-label">Accounts with no role assigned</span>
+        <span class="inbox-arrow">›</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="admin-section">
+    <div class="admin-section-header">
+      <div class="admin-section-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="16"></line>
+          <line x1="8" y1="12" x2="16" y2="12"></line>
+        </svg>
+      </div>
+      <div>
+        <h2>Quick Actions</h2>
+        <p>Common admin tasks</p>
+      </div>
+    </div>
+    <div class="quick-actions">
+      <a href="{{ url_for('create_task') }}" class="quick-action-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+          <line x1="12" y1="11" x2="12" y2="17"></line>
+          <line x1="9" y1="14" x2="15" y2="14"></line>
+        </svg>
+        Create Task
+      </a>
+      <a href="{{ url_for('user_list') }}" class="quick-action-btn secondary">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+        View All Users
+      </a>
+      <a href="{{ url_for('notification') }}" class="quick-action-btn secondary">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+        </svg>
+        Activity Log
+      </a>
+    </div>
+  </div>
+
+  <!-- Intern Progress -->
+  <div class="admin-section">
+    <div class="admin-section-header">
+      <div class="admin-section-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+          <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+        </svg>
+      </div>
+      <div>
+        <h2>Intern Progress</h2>
+        <p>Task completion and grades across all interns</p>
+      </div>
+    </div>
+
+    {% if intern_data %}
+    <div style="overflow-x: auto;">
+      <table class="intern-table">
+        <thead>
+          <tr>
+            <th>Intern</th>
+            <th>Tasks Done / Total</th>
+            <th>Avg Grade</th>
+            <th>Pending</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in intern_data %}
+          <tr>
+            <td>
+              <a href="{{ url_for('specific_user_tasks', user_id=item.user.id) }}" class="intern-name-link">
+                {{ item.user.name }}
+              </a>
+            </td>
+            <td>
+              <div class="progress-bar-mini">
+                <div class="progress-track">
+                  <div class="progress-fill" style="width: {% if item.total > 0 %}{{ (item.done / item.total * 100)|round|int }}{% else %}0{% endif %}%"></div>
+                </div>
+                <span class="progress-label">{{ item.done }} / {{ item.total }}</span>
+              </div>
+            </td>
+            <td>
+              {% if item.avg_grade is not none %}
+                {{ item.avg_grade }}%
+              {% else %}
+                <span style="color: #9ca3af;">—</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="pending-badge {% if item.pending > 0 %}has-pending{% else %}all-clear{% endif %}">
+                {{ item.pending }}
+              </span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="intern-completion-footer">
+      <span class="label">Overall Intern Task Completion Rate</span>
+      <span class="value">{{ intern_completion_rate }}%</span>
+    </div>
+
+    {% else %}
+    <div class="intern-empty-state">
+      No interns have been assigned yet.
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Hours Overview + Recent Activity -->
+  <div class="two-col-layout">
+
+    <!-- Hours Overview -->
+    <div class="admin-section" style="margin-bottom: 0;">
+      <div class="admin-section-header">
+        <div class="admin-section-icon" style="background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%); color: #7c4f00;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+        </div>
+        <div>
+          <h2>Hours Overview</h2>
+          <p>{{ now().strftime('%B %Y') }}</p>
+        </div>
+      </div>
+
+      <div class="hours-big-stat">
+        <div class="big-num">{{ approved_hours_total | round(1) }}</div>
+        <div class="big-label">Total approved volunteer hours</div>
+      </div>
+
+      <div class="hours-sub-stat">
+        <strong>{{ pending_hours_total | round(1) }} hrs</strong> pending approval
+      </div>
+
+      {% if top_contributors %}
+      <p style="font-size: 13px; font-weight: 600; color: #4a5568; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Top Contributors This Month</p>
+      <table class="contributors-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Hours</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user, month_hours in top_contributors %}
+          <tr>
+            <td>{{ user.name }}</td>
+            <td><strong>{{ month_hours | round(1) }}</strong></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p style="font-size: 14px; color: #9ca3af; text-align: center; padding: 16px 0;">No approved hours this month yet.</p>
+      {% endif %}
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="admin-section" style="margin-bottom: 0;">
+      <div class="admin-section-header">
+        <div class="admin-section-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+          </svg>
+        </div>
+        <div>
+          <h2>Recent Activity</h2>
+          <p>Last 10 platform events</p>
+        </div>
+      </div>
+
+      {% if recent_logs %}
+      <div class="activity-feed">
+        {% for log in recent_logs %}
+        {% set delta = now() - log.created_at %}
+        <div class="activity-item">
+          <div class="activity-action">{{ log.action.replace('_', ' ') | capitalize }}</div>
+          <div class="activity-meta">
+            <span>{{ log.actor.name }}</span>
+            <span>
+              {% if delta.days > 0 %}
+                {{ delta.days }}d ago
+              {% elif delta.seconds >= 3600 %}
+                {{ (delta.seconds // 3600) }}h ago
+              {% elif delta.seconds >= 60 %}
+                {{ (delta.seconds // 60) }}m ago
+              {% else %}
+                just now
+              {% endif %}
+            </span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="activity-empty">No recent activity to display.</div>
+      {% endif %}
+    </div>
+
+  </div>
+
 </div>
-
-
 {% endblock %}
