@@ -61,22 +61,23 @@ roles = ["intern", "user", "volunteer", "board"]
 #         db.session.commit()
 #         print("realAdmin user created: realadmin@gmail.com / admin123")
 
-try:
-    jordanAdmin = User.query.filter_by(email="jordan@neoptefoundation.org").first()
-    if not jordanAdmin:
-        jordanAdmin = User(
-            name="Jordan",
-            email="jordan@neoptefoundation.org",
-            password="temppass"   # password hashed in User model
-        )
-        jordanAdmin.role = "admin"
-        jordanAdmin.picture = "default.jpeg"
-        db.session.add(jordanAdmin)
-        db.session.commit()
-        print("Jordan admin created: jordan@neoptefoundation.org / temppass")
-except Exception as e:
-    db.session.rollback()
-    print(f"Seeding skipped (tables not ready yet): {e}")
+with app.app_context():
+    try:
+        jordanAdmin = User.query.filter_by(email="jordan@neoptefoundation.org").first()
+        if not jordanAdmin:
+            jordanAdmin = User(
+                name="Jordan",
+                email="jordan@neoptefoundation.org",
+                password="temppass"
+            )
+            jordanAdmin.role = "admin"
+            jordanAdmin.picture = "default.jpeg"
+            db.session.add(jordanAdmin)
+            db.session.commit()
+            print("Jordan admin created: jordan@neoptefoundation.org / temppass")
+    except Exception as e:
+        db.session.rollback()
+        print(f"Seeding skipped (tables not ready yet): {e}")
 
 # for u in users_data:
 #     # Avoid duplicates
