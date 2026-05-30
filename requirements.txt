@@ -24,3 +24,4 @@ reportlab==4.0.7
 gunicorn
 psycopg2-binary
 python-dotenv
+boto3
