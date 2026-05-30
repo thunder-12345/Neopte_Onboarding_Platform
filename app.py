@@ -1,5 +1,5 @@
 # Imports
-from project import db, app
+from project import db, app, r2, R2_BUCKET_NAME
 from project.decorators import permission_required
 from flask import render_template, redirect, request, url_for, flash, send_from_directory, send_file, current_app, session, abort
 from flask_login import login_user, login_required, logout_user, current_user
@@ -39,75 +39,57 @@ def inject_now():
 roles = ["intern", "user", "volunteer", "board"]
 
 # Generate 20 random users with different roles for initial data
-users_data = []
-for i in range(1, 21):
-    name = f"User{i}"
-    email = f"user{i}@example.com"
-    password = f"pass{i}123"
-    role = random.choice(roles)
-    users_data.append({"name": name, "email": email, "password": password, "role": role})
+# users_data = []
+# for i in range(1, 21):
+#     name = f"User{i}"
+#     email = f"user{i}@example.com"
+#     password = f"pass{i}123"
+#     role = random.choice(roles)
+#     users_data.append({"name": name, "email": email, "password": password, "role": role})
 
 # Create admin and real admin users if they don't exist, and add generated users to the database
-with app.app_context():
-    # admin = User.query.filter_by(email="admin@example.com").first()
-    # if not admin:
-    #     admin = User(
-    #         name="Admin User",
-    #         email="admin@example.com",
-    #         password="admin123",   # password hashed in User model
-    #         picture="default.jpeg",
-    #         role="board"
-    #     )
-    #     print(admin.role)
-    #     db.session.add(admin)
-    #     db.session.commit()
-    #     print("Admin user created: admin@example.com / admin123")
+# with app.app_context():
+#     realAdmin = User.query.filter_by(email="realadmin@gmail.com").first()
+#     if not realAdmin:
+#         realAdmin = User(
+#             name="REAL ADMIN",
+#             email="realadmin@gmail.com",
+#             password="admin123",   # password hashed in User model
+#         )
+#         print(realAdmin.role)
+#         db.session.add(realAdmin)
+#         db.session.commit()
+#         print("realAdmin user created: realadmin@gmail.com / admin123")
 
-    # realAdmin = User.query.filter_by(email="realadmin@gmail.com").first()
-    # if not realAdmin:
-    #     realAdmin = User(
-    #         name="REAL ADMIN",
-    #         email="realadmin@gmail.com",
-    #         password="admin123",   # password hashed in User model
-    #         role="admin",
-    #         picture="default.jpeg"
-    #     )
-    #     print(realAdmin.role)
-    #     db.session.add(realAdmin)
-    #     db.session.commit()
-    #     print("realAdmin user created: realadmin@gmail.com / admin123")
+try:
+    jordanAdmin = User.query.filter_by(email="jordan@neoptefoundation.org").first()
+    if not jordanAdmin:
+        jordanAdmin = User(
+            name="Jordan",
+            email="jordan@neoptefoundation.org",
+            password="temppass"   # password hashed in User model
+        )
+        jordanAdmin.role = "admin"
+        jordanAdmin.picture = "default.jpeg"
+        db.session.add(jordanAdmin)
+        db.session.commit()
+        print("Jordan admin created: jordan@neoptefoundation.org / temppass")
+except Exception as e:
+    db.session.rollback()
+    print(f"Seeding skipped (tables not ready yet): {e}")
 
-    try:
-        jordanAdmin = User.query.filter_by(email="jordan@neoptefoundation.org").first()
-        if not jordanAdmin:
-            jordanAdmin = User(
-                name="Jordan",
-                email="jordan@neoptefoundation.org",
-                password="temppass"   # password hashed in User model
-            )
-            jordanAdmin.role = "admin"
-            jordanAdmin.picture = "default.jpeg"
-            db.session.add(jordanAdmin)
-            db.session.commit()
-            print("Jordan admin created: jordan@neoptefoundation.org / temppass")
-    except Exception as e:
-        db.session.rollback()
-        print(f"Seeding skipped (tables not ready yet): {e}")
-
-    # for u in users_data:
-    #     # Avoid duplicates
-    #     if not User.query.filter_by(email=u["email"]).first():
-    #         user = User(
-    #             name=u["name"],
-    #             email=u["email"],
-    #             password=u["password"],
-    #             picture="default.jpeg",
-    #             role=u["role"], 
-    #         )
-    #         db.session.add(user)
-    #         print(f"Adding {u['name']} ({u['role']})")
-    # db.session.commit()
-    # print("20 users added successfully!")
+# for u in users_data:
+#     # Avoid duplicates
+#     if not User.query.filter_by(email=u["email"]).first():
+#         user = User(
+#             name=u["name"],
+#             email=u["email"],
+#             password=u["password"],
+#         )
+#         db.session.add(user)
+#         print(f"Adding {u['name']} ({u['role']})")
+# db.session.commit()
+# print("20 users added successfully!")
 
 # Route to upgrade a user's role (accessible by board and admin roles)
 @app.route("/upgrade/user", methods=["POST"])
@@ -442,7 +424,7 @@ def document_status():
                     
         for f in uploaded_files:
             if f.filename:  # skip empty uploads
-                f.save(os.path.join(app.config['UPLOAD_PATH'], f.filename))
+                r2.upload_fileobj(f, R2_BUCKET_NAME, f.filename)
                 saved_files.append(f.filename)
                 description = request.form.get("description", type=str)  # Get description from form
                 document = Document(
@@ -529,13 +511,12 @@ def specific_log_document():
 @permission_required('board')
 def view_pdf(doc_id):
     doc = Document.query.get_or_404(doc_id)
-    path = os.path.join(app.config['UPLOAD_PATH'], doc.filename)
-    return send_file(
-        path,
-        mimetype='application/pdf',
-        download_name=f'{doc.filename}.pdf',
-        as_attachment=False  # <-- makes it open inline
+    url = r2.generate_presigned_url(
+        "get_object",
+        Params={"Bucket": R2_BUCKET_NAME, "Key": doc.filename},
+        ExpiresIn=3600,
     )
+    return redirect(url)
 
     # doc = Document.query.get_or_404(doc_id)
     # user_id = request.args.get('user_id')
@@ -1312,10 +1293,10 @@ def complete_task(assignment_id):
             flash("File type not allowed.")
             return redirect(url_for('view_task', assignment_id=assignment_id))
         
-        # Save the file
+        # Save the file to R2
         filename = secure_filename(uploaded_file.filename)
         unique_filename = f"task_{assignment.id}_{filename}"
-        uploaded_file.save(os.path.join(app.config['UPLOAD_PATH'], unique_filename))
+        r2.upload_fileobj(uploaded_file, R2_BUCKET_NAME, unique_filename)
         
         assignment.filename = unique_filename
     
@@ -1549,33 +1530,12 @@ def view_task_file(assignment_id):
     if not assignment.filename:
         abort(404)
     
-    # Get the file path
-    file_path = os.path.join(app.config['UPLOAD_PATH'], assignment.filename)
-    
-    if not os.path.exists(file_path):
-        abort(404)
-    
-    # Determine mimetype based on file extension
-    ext = assignment.filename.lower().rsplit('.', 1)[-1]
-    mimetype_map = {
-        'pdf': 'application/pdf',
-        'jpg': 'image/jpeg',
-        'jpeg': 'image/jpeg',
-        'png': 'image/png',
-        'gif': 'image/gif',
-        'doc': 'application/msword',
-        'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    }
-    
-    mimetype = mimetype_map.get(ext, 'application/octet-stream')
-    
-    # Send file to be viewed in browser (not as download)
-    return send_file(
-        file_path,
-        mimetype=mimetype,
-        as_attachment=False,  # This allows viewing in browser
-        download_name=assignment.filename
+    url = r2.generate_presigned_url(
+        "get_object",
+        Params={"Bucket": R2_BUCKET_NAME, "Key": assignment.filename},
+        ExpiresIn=3600,
     )
+    return redirect(url)
 
 @app.route("/task/edit/<int:task_id>", methods=["GET", "POST"])
 @login_required
@@ -1641,20 +1601,16 @@ def download_task_file(assignment_id):
         flash("No file has been uploaded for this task.", "warning")
         return redirect(url_for('view_task', assignment_id=assignment_id))
     
-    # Get the file path using app.config['UPLOAD_PATH']
-    file_path = os.path.join(app.config['UPLOAD_PATH'], assignment.filename)
-    
-    # Check if file actually exists on disk
-    if not os.path.exists(file_path):
-        flash("File not found on server.", "error")
-        return redirect(url_for('view_task', assignment_id=assignment_id))
-    
-    # Send the file as an attachment (forces download)
-    return send_file(
-        file_path,
-        as_attachment=True,  # This forces download instead of display
-        download_name=assignment.filename  # Preserves the original filename
+    url = r2.generate_presigned_url(
+        "get_object",
+        Params={
+            "Bucket": R2_BUCKET_NAME,
+            "Key": assignment.filename,
+            "ResponseContentDisposition": f'attachment; filename="{assignment.filename}"',
+        },
+        ExpiresIn=3600,
     )
+    return redirect(url)
 
 def generate_grades_report(user):
     """

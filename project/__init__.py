@@ -1,4 +1,5 @@
 import os
+import boto3
 from dotenv import load_dotenv
 load_dotenv()
 from flask import Flask
@@ -28,6 +29,17 @@ if not os.path.exists(UPLOAD_FOLDER):
 app.config['UPLOAD_PATH'] = UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = {'pdf'} #'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'
 app.config['UPLOAD_EXTENSIONS'] = ALLOWED_EXTENSIONS
+
+# Cloudflare R2 storage client (S3-compatible)
+R2_ACCOUNT_ID = os.environ.get("R2_ACCOUNT_ID")
+R2_BUCKET_NAME = os.environ.get("R2_BUCKET_NAME", "documents")
+r2 = boto3.client(
+    "s3",
+    endpoint_url=f"https://{R2_ACCOUNT_ID}.r2.cloudflarestorage.com",
+    aws_access_key_id=os.environ.get("R2_ACCESS_KEY_ID"),
+    aws_secret_access_key=os.environ.get("R2_SECRET_ACCESS_KEY"),
+    region_name="auto",
+)
 
 
 # Define a custom base class for SQLAlchemy models
